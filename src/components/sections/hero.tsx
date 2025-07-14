@@ -37,6 +37,17 @@ export default function Hero() {
       }
 
       const data = await response.json();
+
+      // Log the extracted data to console
+      console.log("=== SCRAPED DATA ===");
+      console.log("Raw Content Length:", data.rawContent?.length || 0);
+      console.log("Business Summary:", data.businessSummary);
+      console.log("What They Do:", data.businessSummary?.whatTheyDo);
+      console.log("Who They Serve:", data.businessSummary?.whoTheyServe);
+      console.log("Industry:", data.businessSummary?.industry);
+      console.log("Location:", data.businessSummary?.location);
+      console.log("===================");
+
       setResult(data);
     } catch (err) {
       setError(
@@ -99,60 +110,74 @@ export default function Hero() {
 
         {result && (
           <div className="w-full max-w-4xl space-y-6">
-            <Card>
+            <Card
+              className="border-none shadow-lg"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #ffffff)",
+                boxShadow: "5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff",
+                borderRadius: "12px",
+              }}
+            >
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Analysis Results for {result.url}
+                <CardTitle className="flex items-center gap-3">
+                  <img
+                    src={result.faviconUrl}
+                    alt="Favicon"
+                    className="h-6 w-6 rounded-sm"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  Business Analysis
+                  {result.isContentTruncated && (
+                    <Badge
+                      variant="outline"
+                      className="ml-2 border-orange-600 text-orange-600"
+                    >
+                      {result.contentAnalysisFlag}
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">
-                      {result.scrapedContent?.wordCount || 0}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Words</div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-blue-600">What They Do</h4>
+                    <p className="text-sm text-gray-700">
+                      {result.businessSummary?.whatTheyDo || "Not found"}
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">
-                      {result.scrapedContent?.readingTime || 0}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Min Read
-                    </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-green-600">
+                      Who They Serve
+                    </h4>
+                    <p className="text-sm text-gray-700">
+                      {result.businessSummary?.whoTheyServe || "Not found"}
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <Badge variant="secondary">
-                      {result.analysis?.sentiment || "N/A"}
-                    </Badge>
-                    <div className="text-sm text-muted-foreground">
-                      Sentiment
-                    </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-purple-600">
+                      City and Country
+                    </h4>
+                    <p className="text-sm text-gray-700">
+                      {result.businessSummary?.cityAndCountry || "Not found"}
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <Badge variant="outline">
-                      {result.analysis?.complexity || "N/A"}
-                    </Badge>
-                    <div className="text-sm text-muted-foreground">
-                      Complexity
-                    </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-orange-600">
+                      Services Offered
+                    </h4>
+                    <p className="text-sm text-gray-700">
+                      {result.businessSummary?.servicesOffered || "Not found"}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-red-600">Pricing</h4>
+                    <p className="text-sm text-gray-700">
+                      {result.businessSummary?.pricing || "Not found"}
+                    </p>
                   </div>
                 </div>
-
-                {result.analysis?.topics && (
-                  <div>
-                    <h4 className="mb-2 font-medium">Key Topics</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {result.analysis.topics
-                        .slice(0, 5)
-                        .map((topic: string, index: number) => (
-                          <Badge key={index} variant="secondary">
-                            {topic}
-                          </Badge>
-                        ))}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

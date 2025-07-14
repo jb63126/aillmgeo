@@ -1,15 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebScraper } from "~/lib/scraper";
-import { ContentAnalyzer } from "~/lib/analyzer";
-import { LLMIntegrations } from "~/lib/llm-integrations";
 import {
   createWebsite,
   updateWebsiteContent,
   insertAnalysis,
-  insertLLMTest,
-  insertReferenceCheck,
-  insertPageSpeedInsights,
 } from "~/lib/database";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+async function createBusinessSummary(content: string) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: `You are a business analyst. Analyze the provided website content and extract key business information. Return ONLY a JSON object with these exact fields:
+{
+  "whatTheyDo": "Brief description of what the company/entity does",
+  "whoTheyServe": "Description of their target audience/customers",
+  "cityAndCountry": "City and country where they are based",
+  "servicesOffered": "Any services they offer",
+  "pricing": "How much they charge for their services/products"
+}
+
+If you cannot determine any field, use "Not found" as the value.`,
+        },
+        {
+          role: "user",
+          content: `Analyze this website content and extract business information:\n\n${content.substring(0, 10000)}`,
+        },
+      ],
+      temperature: 0.3,
+    });
+
+    const result = response.choices[0]?.message?.content;
+    return JSON.parse(
+      result ||
+        '{"whatTheyDo": "Not found", "whoTheyServe": "Not found", "cityAndCountry": "Not found", "servicesOffered": "Not found", "pricing": "Not found"}'
+    );
+  } catch (error) {
+    console.error("OpenAI summary error:", error);
+    return {
+      whatTheyDo: "Not found",
+      whoTheyServe: "Not found",
+      cityAndCountry: "Not found",
+      servicesOffered: "Not found",
+      pricing: "Not found",
+    };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,156 +72,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Scrape multiple pages (home, about, provided URL)
-    console.log("Scraping website (multiple pages):", url);
-    const multiPageContent = await WebScraper.scrapeMultiplePages(url);
-    const { combinedContent } = multiPageContent;
+    // Step 1: Scrape main URL only
+    console.log("Scraping website:", url);
+    const scrapedContent = await WebScraper.scrapeWebsite(url);
 
-    // Step 2: Save to database (using combined content)
+    // Check if content was truncated
+    const contentLength = scrapedContent.content.length;
+    const isContentTruncated = contentLength >= 10000;
+
+    // Step 2: Save to database (using scraped content)
     const website = await createWebsite(
       url,
-      combinedContent.title,
-      combinedContent.description
+      scrapedContent.title,
+      scrapedContent.description
     );
-    await updateWebsiteContent(website.id, combinedContent.content);
+    await updateWebsiteContent(website.id, scrapedContent.content);
 
-    // Step 3: Analyze combined content
-    console.log(
-      "Analyzing combined content from",
-      multiPageContent.pages.length,
-      "pages..."
-    );
-    // Create a ScrapedContent object for analysis compatibility
-    const scrapedForAnalysis = {
-      url,
-      title: combinedContent.title,
-      description: combinedContent.description,
-      content: combinedContent.content,
-      headings: combinedContent.headings,
-      links: combinedContent.allLinks,
-      images: combinedContent.allImages,
-      metadata: combinedContent.combinedMetadata,
-    };
-    const analysis = ContentAnalyzer.analyzeContent(scrapedForAnalysis);
+    // Step 3: Create OpenAI summary
+    console.log("Creating OpenAI summary for business information...");
+    const openAISummary = await createBusinessSummary(scrapedContent.content);
 
-    // Save analysis to database
-    await insertAnalysis(website.id, "content_analysis", analysis);
+    console.log("OpenAI Summary:", openAISummary);
 
-    // Step 4: Generate queries for LLM testing
-    console.log("Generating test queries...");
-    const queries = await LLMIntegrations.generateQueries(
-      scrapedForAnalysis,
-      analysis
-    );
+    // Save OpenAI summary to database
+    await insertAnalysis(website.id, "openai_summary", openAISummary);
 
-    // Step 5: Test with both OpenAI and Anthropic
-    console.log("Testing with LLMs...");
-    const llmResults = [];
+    // Generate favicon URL
+    const urlObj = new URL(url);
+    const faviconUrl = `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
 
-    for (const testQuery of queries) {
-      // Test with OpenAI
-      const openaiResult = await LLMIntegrations.testWithOpenAI(
-        testQuery,
-        scrapedForAnalysis
-      );
-      const openaiVerification = await LLMIntegrations.verifyResponse(
-        testQuery,
-        openaiResult.response,
-        scrapedForAnalysis.content
-      );
-
-      // Save OpenAI result
-      const openaiDbResult = await insertLLMTest(
-        website.id,
-        testQuery,
-        openaiResult.model,
-        openaiResult.response,
-        openaiResult.responseTime
-      );
-
-      // Save OpenAI verification
-      await insertReferenceCheck(
-        openaiDbResult.id,
-        "content_analysis",
-        openaiVerification.isAccurate,
-        openaiVerification.confidence / 100,
-        openaiVerification.notes
-      );
-
-      llmResults.push({
-        ...openaiResult,
-        verification: openaiVerification,
-      });
-
-      // Test with Anthropic
-      const anthropicResult = await LLMIntegrations.testWithAnthropic(
-        testQuery,
-        scrapedForAnalysis
-      );
-      const anthropicVerification = await LLMIntegrations.verifyResponse(
-        testQuery,
-        anthropicResult.response,
-        scrapedForAnalysis.content
-      );
-
-      // Save Anthropic result
-      const anthropicDbResult = await insertLLMTest(
-        website.id,
-        testQuery,
-        anthropicResult.model,
-        anthropicResult.response,
-        anthropicResult.responseTime
-      );
-
-      // Save Anthropic verification
-      await insertReferenceCheck(
-        anthropicDbResult.id,
-        "content_analysis",
-        anthropicVerification.isAccurate,
-        anthropicVerification.confidence / 100,
-        anthropicVerification.notes
-      );
-
-      llmResults.push({
-        ...anthropicResult,
-        verification: anthropicVerification,
-      });
-    }
-
-    // Step 6: Get PageSpeed insights
-    console.log("Getting PageSpeed insights...");
-    const pageSpeedResult = await LLMIntegrations.getPageSpeedInsights(url);
-
-    if (pageSpeedResult) {
-      await insertPageSpeedInsights(
-        website.id,
-        pageSpeedResult.performanceScore,
-        pageSpeedResult.accessibilityScore,
-        pageSpeedResult.bestPracticesScore,
-        pageSpeedResult.seoScore,
-        pageSpeedResult.metrics
-      );
-    }
-
-    // Return comprehensive results
+    // Return results
     return NextResponse.json({
       success: true,
       websiteId: website.id,
       url,
+      faviconUrl,
       scrapedContent: {
-        title: combinedContent.title,
-        description: combinedContent.description,
-        wordCount: analysis.wordCount,
-        readingTime: analysis.readingTime,
+        title: scrapedContent.title,
+        description: scrapedContent.description,
+        wordCount: scrapedContent.content.split(" ").length,
+        readingTime: Math.ceil(scrapedContent.content.split(" ").length / 200),
       },
-      multiPageInfo: {
-        pagesScraped: multiPageContent.pages.length,
-        scrapedUrls: multiPageContent.pages.map((page) => page.url),
-      },
-      analysis,
-      llmResults,
-      pageSpeedResult,
-      queries,
+      businessSummary: openAISummary,
+      rawContent: scrapedContent.content,
+      isContentTruncated,
+      contentAnalysisFlag: isContentTruncated
+        ? "entire website not analyzed"
+        : "complete analysis",
     });
   } catch (error) {
     console.error("Analysis error:", error);

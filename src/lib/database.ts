@@ -7,11 +7,20 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Redis connection (Upstash)
-const redis = new Redis(process.env.REDIS_URL!, {
-  retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3,
-});
+// Redis connection (Upstash) - temporarily disabled
+// const redis = new Redis(process.env.REDIS_URL!, {
+//   retryDelayOnFailover: 100,
+//   maxRetriesPerRequest: 3,
+// });
+
+// Mock Redis for now
+const redis = {
+  get: async () => null,
+  set: async () => "OK",
+  setex: async () => "OK",
+  del: async () => 1,
+  exists: async () => 0,
+};
 
 export { supabase as db, redis };
 
@@ -43,22 +52,47 @@ export async function createWebsite(
   title?: string,
   description?: string
 ) {
-  const { data, error } = await supabase
+  // First try to get existing website
+  const { data: existing } = await supabase
     .from("websites")
-    .insert([
-      {
-        url,
-        title,
-        description,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ])
-    .select()
+    .select("*")
+    .eq("url", url)
     .single();
 
-  if (error) throw error;
-  return data;
+  if (existing) {
+    // Update existing website
+    const { data, error } = await supabase
+      .from("websites")
+      .update({
+        title,
+        description,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } else {
+    // Create new website
+    const { data, error } = await supabase
+      .from("websites")
+      .insert([
+        {
+          url,
+          title,
+          description,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
 }
 
 export async function updateWebsiteContent(id: number, content: string) {

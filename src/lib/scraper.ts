@@ -211,13 +211,15 @@ export class WebScraper {
     }
 
     try {
-      // Fetch the webpage
+      // Fetch the webpage with optimized settings
       const response = await axios.get(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         },
-        timeout: 30000,
+        timeout: 8000, // Reduced from 30000
+        maxContentLength: 1000000, // Limit content size to 1MB
+        maxBodyLength: 1000000,
       });
 
       const $ = cheerio.load(response.data);
@@ -251,32 +253,72 @@ export class WebScraper {
   }
 
   private static extractMainContent($: cheerio.CheerioAPI): string {
-    // Remove unwanted elements
+    // Remove unwanted elements quickly
     $(
-      "script, style, nav, header, footer, aside, .advertisement, .ads"
+      "script, style, nav, header, aside, .advertisement, .ads, .cookie, .popup, .modal"
     ).remove();
 
-    // Try to find main content area
+    // Try to find main content area (optimized order)
     const contentSelectors = [
       "main",
       "article",
+      "[role='main']",
       ".content",
-      ".main-content",
       "#content",
+      ".main-content",
       "#main",
-      ".post-content",
-      ".entry-content",
     ];
 
+    let mainContent = "";
     for (const selector of contentSelectors) {
       const element = $(selector);
-      if (element.length > 0 && element.text().trim().length > 100) {
-        return element.text().trim();
+      if (element.length > 0) {
+        const text = element.text().trim();
+        if (text.length > 100) {
+          mainContent = text;
+          break;
+        }
       }
     }
 
-    // Fallback to body content
-    return $("body").text().replace(/\s+/g, " ").trim();
+    // If no main content found, fallback to body content
+    if (!mainContent) {
+      mainContent = $("body").text().replace(/\s+/g, " ").trim();
+    }
+
+    // Extract footer content specifically for location information
+    const footerContent = this.extractFooterContent($);
+
+    // Combine main content with footer content
+    const combinedContent =
+      mainContent +
+      (footerContent ? "\n\nFOOTER INFORMATION:\n" + footerContent : "");
+
+    // Limit content length to 10000 characters
+    return combinedContent.substring(0, 10000).replace(/\s+/g, " ").trim();
+  }
+
+  private static extractFooterContent($: cheerio.CheerioAPI): string {
+    const footerSelectors = [
+      "footer",
+      ".footer",
+      "#footer",
+      ".site-footer",
+      ".page-footer",
+      "[role='contentinfo']",
+    ];
+
+    for (const selector of footerSelectors) {
+      const element = $(selector);
+      if (element.length > 0) {
+        const text = element.text().trim();
+        if (text.length > 10) {
+          return text.substring(0, 1000).replace(/\s+/g, " ").trim();
+        }
+      }
+    }
+
+    return "";
   }
 
   private static extractHeadings($: cheerio.CheerioAPI): string[] {
