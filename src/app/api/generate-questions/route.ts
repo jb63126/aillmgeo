@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 async function generateSearchQuestions(businessSummary: any) {
   try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const summaryText = `
       What they do: ${businessSummary.whatTheyDo}
       Who they serve: ${businessSummary.whoTheyServe}
