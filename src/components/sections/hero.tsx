@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -14,6 +14,43 @@ export default function Hero() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [showLLMSection, setShowLLMSection] = useState(false);
+  const businessAnalysisRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to business analysis when result appears, then show LLM section after scroll
+  useEffect(() => {
+    if (result && businessAnalysisRef.current) {
+      // Reset LLM section visibility
+      setShowLLMSection(false);
+
+      setTimeout(() => {
+        businessAnalysisRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        // Show LLM section 3 seconds after scroll completes
+        setTimeout(() => {
+          setShowLLMSection(true);
+        }, 3000);
+      }, 100);
+    }
+  }, [result]);
+
+  const normalizeUrl = (inputUrl: string) => {
+    let normalizedUrl = inputUrl.trim();
+
+    // If URL doesn't start with http:// or https://, add https://
+    if (
+      !normalizedUrl.startsWith("http://") &&
+      !normalizedUrl.startsWith("https://")
+    ) {
+      normalizedUrl = "https://" + normalizedUrl;
+    }
+
+    return normalizedUrl;
+  };
 
   const handleAnalyze = async () => {
     if (!url.trim()) {
@@ -25,12 +62,14 @@ export default function Hero() {
     setError("");
 
     try {
+      const normalizedUrl = normalizeUrl(url);
+
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: normalizedUrl }),
       });
 
       if (!response.ok) {
@@ -51,6 +90,11 @@ export default function Hero() {
       console.log("===================");
 
       setResult(data);
+
+      // Automatically generate questions after business analysis completes
+      if (data.businessSummary) {
+        generateQuestions(data.businessSummary);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
@@ -60,48 +104,89 @@ export default function Hero() {
     }
   };
 
+  const generateQuestions = async (businessSummary: any) => {
+    setIsGeneratingQuestions(true);
+
+    try {
+      const response = await fetch("/api/generate-questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ businessSummary }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate questions");
+      }
+
+      const data = await response.json();
+
+      // Update result state with generated questions
+      setResult((prev: any) => ({
+        ...prev,
+        generatedQuestions: data.questions,
+      }));
+    } catch (err) {
+      console.error("Error generating questions:", err);
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+  };
+
+  const createDynamicTableData = (questions: string[]) => {
+    return questions.map((question) => ({
+      query: question,
+      results: [
+        { llm: "ChatGPT", result: Math.random() > 0.3 },
+        { llm: "Perplexity", result: Math.random() > 0.4 },
+        { llm: "Claude", result: Math.random() > 0.3 },
+      ],
+    }));
+  };
+
   return (
     <section className="min-h-screen">
-      <div className="container flex w-full flex-col items-center justify-center space-y-20 py-16 md:py-20 lg:py-24 xl:py-28">
+      <div className="container flex w-full flex-col items-center justify-center space-y-12 px-4 py-12 sm:space-y-20 sm:py-16 md:py-20 lg:py-24 xl:py-28">
         <div className="mx-auto w-full max-w-4xl">
-          <div className="mx-auto mb-5 flex max-w-fit items-center justify-center space-x-2 overflow-hidden rounded-full bg-blue-100 px-7 py-2 transition-colors duration-300 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800">
-            <AlertCircle className="h-5 w-5 text-blue-700 dark:text-blue-300" />
-            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+          <div className="mx-auto mb-4 flex max-w-fit items-center justify-center space-x-2 overflow-hidden rounded-full bg-blue-100 px-4 py-2 transition-colors duration-300 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 sm:mb-5 sm:px-7">
+            <AlertCircle className="h-4 w-4 text-blue-700 dark:text-blue-300 sm:h-5 sm:w-5" />
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 sm:text-sm">
               Own the Answer
             </p>
           </div>
 
-          <h1 className="text-balance bg-gradient-to-br from-gray-900 via-gray-800 to-gray-400 bg-clip-text text-center font-heading text-[40px] font-bold leading-tight tracking-[-0.02em] text-transparent drop-shadow-sm duration-300 ease-linear [word-spacing:theme(spacing.1)] dark:bg-gradient-to-br dark:from-gray-100 dark:to-gray-900 md:text-7xl md:leading-[5rem]">
+          <h1 className="text-balance bg-gradient-to-br from-gray-900 via-gray-800 to-gray-400 bg-clip-text text-center font-heading text-3xl font-bold leading-tight tracking-[-0.02em] text-transparent drop-shadow-sm duration-300 ease-linear [word-spacing:theme(spacing.1)] dark:bg-gradient-to-br dark:from-gray-100 dark:to-gray-900 sm:text-[40px] md:text-7xl md:leading-[5rem]">
             Rank Higher in AI Search
           </h1>
 
-          <p className="mx-auto mt-6 max-w-3xl text-balance text-center text-muted-foreground md:text-xl">
+          <p className="mx-auto mt-4 max-w-3xl text-balance px-4 text-center text-base text-muted-foreground sm:mt-6 sm:px-0 md:text-xl">
             Optimize your content to be the top-cited source in ChatGPT,
             Perplexity, and Google SGE. Stop losing traffic to AI-generated
             answers
           </p>
 
-          <div className="mx-auto mt-8 flex flex-col items-center justify-center space-y-4">
-            <div className="w-full max-w-3xl">
+          <div className="mx-auto mt-6 flex flex-col items-center justify-center space-y-4 sm:mt-8">
+            <div className="w-full max-w-3xl px-4 sm:px-0">
               <div className="relative">
                 <Input
-                  placeholder="Enter your URL for analysis"
+                  placeholder="Enter your website (e.g., example.com)"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   disabled={isAnalyzing}
                   onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                  className="py-6 pr-12 text-lg"
+                  className="py-4 pr-12 text-base sm:py-6 sm:pr-12 sm:text-lg"
                 />
                 <Button
                   onClick={handleAnalyze}
                   disabled={isAnalyzing || !url.trim()}
-                  className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 transform bg-blue-600 p-0 hover:bg-blue-700"
+                  className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 transform bg-blue-600 p-0 hover:bg-blue-700 sm:h-8 sm:w-8"
                   size="sm"
                 >
                   {isAnalyzing ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <Loader2 className="h-3 w-3 animate-spin text-white sm:h-4 sm:w-4" />
                   ) : (
-                    <span className="text-lg">✨</span>
+                    <span className="text-base sm:text-lg">✨</span>
                   )}
                 </Button>
               </div>
@@ -111,71 +196,73 @@ export default function Hero() {
         </div>
 
         {result && (
-          <div className="w-full max-w-4xl space-y-6">
+          <div
+            ref={businessAnalysisRef}
+            className="w-full max-w-4xl space-y-6 px-4 sm:px-0"
+          >
             <Card
-              className="border-none shadow-lg"
-              style={{
-                background: "linear-gradient(145deg, #ffffff, #ffffff)",
-                boxShadow: "5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff",
-                borderRadius: "12px",
-              }}
+              className="animate__animated animate__slideInUp mx-auto w-full max-w-6xl"
+              style={{ animationDuration: "4s" }}
             >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <img
-                    src={result.faviconUrl}
-                    alt="Favicon"
-                    className="h-6 w-6 rounded-sm"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                  Business Analysis
+              <CardHeader className="pb-4">
+                <CardTitle className="flex flex-col items-start gap-2 text-lg sm:flex-row sm:items-center sm:gap-3 sm:text-xl">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={result.faviconUrl}
+                      alt="Favicon"
+                      className="h-5 w-5 rounded-sm sm:h-6 sm:w-6"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    <span>Business Analysis</span>
+                  </div>
                   {result.isContentTruncated && (
-                    <Badge
-                      variant="outline"
-                      className="ml-2 border-orange-600 text-orange-600"
-                    >
+                    <Badge variant="outline" className="text-xs">
                       {result.contentAnalysisFlag}
                     </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <CardContent className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
                   <div className="space-y-2">
-                    <h4 className="font-medium text-blue-600">What They Do</h4>
-                    <p className="text-sm text-gray-700">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
+                      What They Do
+                    </h4>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {result.businessSummary?.whatTheyDo || "Not found"}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-green-600">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
                       Who They Serve
                     </h4>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {result.businessSummary?.whoTheyServe || "Not found"}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-purple-600">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
                       City and Country
                     </h4>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {result.businessSummary?.cityAndCountry || "Not found"}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-orange-600">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
                       Services Offered
                     </h4>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {result.businessSummary?.servicesOffered || "Not found"}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-red-600">Pricing</h4>
-                    <p className="text-sm text-gray-700">
+                  <div className="space-y-2 lg:col-span-2">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
+                      Pricing
+                    </h4>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {result.businessSummary?.pricing || "Not found"}
                     </p>
                   </div>
@@ -186,24 +273,44 @@ export default function Hero() {
         )}
 
         {/* LLM Comparison Table Section */}
-        <div className="w-full max-w-6xl space-y-6">
-          <div className="space-y-4 pt-16 text-center">
-            <h2 className="text-3xl font-bold tracking-tight">
-              LLM Performance Analysis
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              See how different AI models perform on website analysis tasks.
-              This comparison helps you understand which AI provides the most
-              reliable results.
-            </p>
-          </div>
+        {result && showLLMSection && (
+          <div
+            className="animate__animated animate__slideInUp w-full max-w-6xl space-y-6 px-4 sm:px-0"
+            style={{ animationDuration: "4s" }}
+          >
+            <div className="space-y-4 pt-8 text-center sm:pt-16">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                LLM Performance Analysis
+              </h2>
+              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+                See how different AI models perform on website analysis tasks.
+                This comparison helps you understand which AI provides the most
+                reliable results.
+              </p>
+            </div>
 
-          <LLMComparisonTable
-            data={websiteAnalysisQueries}
-            title="Website Analysis Performance"
-            className="mt-8"
-          />
-        </div>
+            {isGeneratingQuestions ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="text-lg">
+                    Generating search questions...
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <LLMComparisonTable
+                data={
+                  result.generatedQuestions
+                    ? createDynamicTableData(result.generatedQuestions)
+                    : websiteAnalysisQueries
+                }
+                title="Website Analysis Performance"
+                className="mt-8"
+              />
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

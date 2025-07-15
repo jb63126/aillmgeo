@@ -68,21 +68,24 @@ const LLMComparisonTable = ({
   );
 
   return (
-    <Card className={`mx-auto w-full max-w-6xl ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
-        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+    <Card className={`relative mx-auto w-full max-w-6xl ${className}`}>
+      <CardHeader className="flex flex-col space-y-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:pb-6">
+        <CardTitle className="text-lg font-semibold sm:text-xl">
+          {title}
+        </CardTitle>
         <Button
           variant="outline"
           size="sm"
           onClick={handleExport}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 self-start sm:self-auto"
         >
           <Download className="h-4 w-4" />
-          Export
+          <span className="hidden sm:inline">Export</span>
         </Button>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full">
             {/* Header */}
             <thead>
@@ -124,17 +127,35 @@ const LLMComparisonTable = ({
           </table>
         </div>
 
+        {/* Desktop Freemium Paywall Overlay */}
+        {data.length > 1 && (
+          <div className="absolute inset-0 top-[90px] z-20 hidden items-center justify-center md:flex">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
+            <div className="relative z-30 rounded-lg border border-border bg-card p-6 shadow-lg">
+              <div className="space-y-4 text-center">
+                <h3 className="text-lg font-semibold">See Full Results</h3>
+                <p className="text-sm text-muted-foreground">
+                  Login to view all comparison data
+                </p>
+                <Button>
+                  <a href="/login">Login to see full results</a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile View */}
         <div className="md:hidden">
           {data.map((item, index) => (
             <div
               key={index}
-              className={`space-y-3 border-b border-border/50 p-4 ${index % 2 === 0 ? "bg-background" : "bg-muted/20"} `}
+              className={`space-y-3 border-b border-border/50 p-3 ${index % 2 === 0 ? "bg-background" : "bg-muted/20"} `}
             >
-              <div className="text-sm font-medium leading-relaxed">
+              <div className="text-xs font-medium leading-relaxed text-foreground">
                 {item.query}
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {item.results.map((result, resultIndex) => (
                   <div
                     key={resultIndex}
@@ -149,6 +170,24 @@ const LLMComparisonTable = ({
               </div>
             </div>
           ))}
+
+          {/* Mobile Freemium Paywall */}
+          {data.length > 1 && (
+            <div className="absolute inset-0 top-[50px] z-20 flex items-center justify-center md:hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
+              <div className="relative z-30 mx-4 rounded-lg border border-border bg-card p-4 shadow-lg">
+                <div className="space-y-3 text-center">
+                  <h3 className="text-base font-semibold">See Full Results</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Login to view all comparison data
+                  </p>
+                  <Button className="w-full text-sm">
+                    <a href="/login">Login to see full results</a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
