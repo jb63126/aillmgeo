@@ -7,7 +7,7 @@
     "dev:email": "email dev -p 9000",
     "dev:content": "velite build --watch",
     "build:content": "velite build --clean",
-    "build": "pnpm build:content && prisma generate && prisma db push && next build",
+    "build": "pnpm build:content && prisma generate && next build",
     "start": "next start",
     "lint": "next lint --dir src",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,css}'",
