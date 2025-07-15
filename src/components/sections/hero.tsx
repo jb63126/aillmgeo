@@ -6,6 +6,8 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import LLMComparisonTable from "~/components/ui/llm-comparison-table";
+import { websiteAnalysisQueries } from "~/data/llm-comparison-data";
 
 export default function Hero() {
   const [url, setUrl] = useState("");
@@ -182,6 +184,26 @@ export default function Hero() {
             </Card>
           </div>
         )}
+
+        {/* LLM Comparison Table Section */}
+        <div className="w-full max-w-6xl space-y-6">
+          <div className="space-y-4 pt-16 text-center">
+            <h2 className="text-3xl font-bold tracking-tight">
+              LLM Performance Analysis
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              See how different AI models perform on website analysis tasks.
+              This comparison helps you understand which AI provides the most
+              reliable results.
+            </p>
+          </div>
+
+          <LLMComparisonTable
+            data={websiteAnalysisQueries}
+            title="Website Analysis Performance"
+            className="mt-8"
+          />
+        </div>
       </div>
     </section>
   );

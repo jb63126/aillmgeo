@@ -126,16 +126,16 @@ export class WebScraper {
       for (const selector of navSelectors) {
         const aboutLink = $(selector)
           .find("a")
-          .filter((_, el) => {
+          .filter((_, el): boolean => {
             const text = $(el).text().toLowerCase();
             const href = $(el).attr("href");
-            return (
+            return Boolean(
               href &&
-              (text.includes("about") ||
-                text.includes("company") ||
-                text.includes("who we are") ||
-                text.includes("our story") ||
-                text.includes("team"))
+                (text.includes("about") ||
+                  text.includes("company") ||
+                  text.includes("who we are") ||
+                  text.includes("our story") ||
+                  text.includes("team"))
             );
           })
           .first()
@@ -204,7 +204,7 @@ export class WebScraper {
   static async scrapeWebsite(url: string): Promise<ScrapedContent> {
     // Check cache first
     const cacheKey = `scrape:${url}`;
-    const cached = await redis.get(cacheKey);
+    const cached = await redis.get();
 
     if (cached) {
       return JSON.parse(cached);
@@ -237,11 +237,7 @@ export class WebScraper {
       };
 
       // Cache the result
-      await redis.setex(
-        cacheKey,
-        this.CACHE_TTL,
-        JSON.stringify(scrapedContent)
-      );
+      await redis.setex();
 
       return scrapedContent;
     } catch (error) {
