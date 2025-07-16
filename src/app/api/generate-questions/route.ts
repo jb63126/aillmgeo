@@ -1,103 +1,145 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-async function classifyBusinessType(businessSummary: any) {
-  try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+function sanitizeBusinessContext(businessSummary: any) {
+  // Extract company name and common variations to remove from context
+  const companyName = businessSummary.companyName || "";
+  const companyVariations: string[] = [];
 
-    const summaryText = `
-      Company: ${businessSummary.companyName}
-      What they do: ${businessSummary.whatTheyDo}
-      Who they serve: ${businessSummary.whoTheyServe}
-      Location: ${businessSummary.cityAndCountry}
-      Services: ${businessSummary.servicesOffered}
-    `;
+  if (companyName && companyName !== "Not found") {
+    // Add the full company name
+    companyVariations.push(companyName);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `Analyze this business and classify it as one of three types:
-          
-1. "local" - Small local businesses that serve a specific geographic area (restaurants, plumbers, local retail, medical practices, etc.)
-2. "national" - Large companies that operate across multiple regions/states (major brands, franchises, big corporations)
-3. "online" - Digital-first businesses that primarily operate online (SaaS, fintech apps, e-commerce platforms, digital services)
-
-Return ONLY a JSON object with this exact format:
-{
-  "type": "local|national|online",
-  "reasoning": "brief explanation"
-}`,
-        },
-        {
-          role: "user",
-          content: `Classify this business: ${summaryText}`,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 150,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content received from OpenAI classification");
+    // Add shortened versions (remove common suffixes)
+    const cleanName = companyName
+      .replace(
+        /\s+(Inc\.?|LLC\.?|Corp\.?|Corporation|Technologies|Tech|Ltd\.?|Limited|Co\.?)$/i,
+        ""
+      )
+      .trim();
+    if (cleanName !== companyName) {
+      companyVariations.push(cleanName);
     }
 
-    return JSON.parse(content);
-  } catch (error) {
-    console.error("Error classifying business type:", error);
-    throw error;
+    // Add first word if multi-word
+    const firstWord = cleanName.split(" ")[0];
+    if (firstWord.length > 2) {
+      companyVariations.push(firstWord);
+    }
   }
+
+  // Function to remove company references from text
+  const removeCompanyRefs = (text: string) => {
+    if (!text || text === "Not found") return text;
+
+    let cleaned = text;
+    companyVariations.forEach((variation) => {
+      if (variation && variation.length > 2) {
+        // Remove company name with various patterns
+        const patterns = [
+          new RegExp(`\\b${variation}\\b`, "gi"),
+          new RegExp(`\\b${variation}'s\\b`, "gi"),
+          new RegExp(`\\bfrom ${variation}\\b`, "gi"),
+          new RegExp(`\\bwith ${variation}\\b`, "gi"),
+          new RegExp(`\\blike ${variation}\\b`, "gi"),
+          new RegExp(`\\bat ${variation}\\b`, "gi"),
+        ];
+
+        patterns.forEach((pattern) => {
+          cleaned = cleaned.replace(pattern, "").trim();
+        });
+      }
+    });
+
+    // Clean up extra spaces and punctuation
+    cleaned = cleaned
+      .replace(/\s+/g, " ")
+      .replace(/^[,\s]+|[,\s]+$/g, "")
+      .trim();
+
+    return cleaned || "Not found";
+  };
+
+  return {
+    industry: businessSummary.industry || "Not found",
+    servicesOffered: removeCompanyRefs(
+      businessSummary.servicesOffered || "Not found"
+    ),
+    whoTheyServe: removeCompanyRefs(
+      businessSummary.whoTheyServe || "Not found"
+    ),
+    businessModel: businessSummary.businessModel || "Not found",
+    businessType: businessSummary.businessType || "Not found",
+    serviceArea:
+      businessSummary.serviceArea ||
+      businessSummary.cityAndCountry ||
+      "Not found",
+    keyDifferentiators: removeCompanyRefs(
+      businessSummary.keyDifferentiators || "Not found"
+    ),
+    pricing: removeCompanyRefs(businessSummary.pricing || "Not found"),
+  };
 }
 
-async function generateContextualQuestions(
-  businessSummary: any,
-  businessType: any
-) {
+async function generateCustomerIntentQuestions(businessSummary: any) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key is not configured");
+    }
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const summaryText = `
-      Company: ${businessSummary.companyName}
-      What they do: ${businessSummary.whatTheyDo}
-      Who they serve: ${businessSummary.whoTheyServe}
-      Location: ${businessSummary.cityAndCountry}
-      Services: ${businessSummary.servicesOffered}
-      Business Type: ${businessType.type}
-    `;
-
-    let promptGuidance = "";
-    if (businessType.type === "local") {
-      promptGuidance = `Generate questions like "Who is the top [service] company in [city]?" or "What are the best [service] providers near [location]?" Include the city/location when available.`;
-    } else if (businessType.type === "online") {
-      promptGuidance = `Generate questions like "Who is the top online [service] provider?" or "What are the best digital [service] platforms?" Focus on online/digital aspects.`;
-    } else {
-      // national
-      promptGuidance = `Generate questions like "Who are the top [service] companies?" or "What are the leading [industry] providers?" Focus on national/major players.`;
-    }
+    // Sanitize business context to remove company names
+    const sanitizedContext = sanitizeBusinessContext(businessSummary);
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: `Based on this business information, generate exactly 3 human-like questions that someone might ask when looking for similar services. 
+          content: `You are a search behavior expert who understands how people actually search for services online. Generate natural, intent-driven questions that reflect real customer search patterns.
 
-${promptGuidance}
+Based on the business context provided, create exactly 3 questions using these criteria:
 
-Make the questions natural and conversational. Focus on the type of service/industry rather than the specific company.
+Question Types to Include:
+1. **Problem-focused**: "I need help with..." or "How do I..."
+2. **Solution-seeking**: "What's the best way to..." or "Who can help me..."
+3. **Comparison/evaluation**: "How much does..." or "What should I look for..."
 
-Return ONLY a JSON array of 3 strings, no other text.
-Example format: ["question 1", "question 2", "question 3"]`,
+Intent Matching:
+- **Local businesses**: Include location-specific questions
+- **B2B services**: Focus on business outcomes and ROI
+- **B2C services**: Emphasize personal benefits and convenience
+- **Technical services**: Include skill/expertise validation questions
+
+Quality Standards:
+- Use natural, conversational language
+- Reflect actual search query patterns
+- Include pain points and desired outcomes
+- Vary question length and structure
+- Avoid industry jargon unless commonly searched
+- DO NOT include specific company names in questions
+
+Return ONLY a JSON array of 3 strings with no additional text.
+Format: ["question 1", "question 2", "question 3"]`,
         },
         {
           role: "user",
-          content: `Generate 3 contextual questions for this ${businessType.type} business: ${summaryText}`,
+          content: `Generate 3 customer-intent questions for this business context:
+
+Business Details:
+- Industry: ${sanitizedContext.industry}
+- Services: ${sanitizedContext.servicesOffered}
+- Target audience: ${sanitizedContext.whoTheyServe}
+- Business model: ${sanitizedContext.businessModel}
+- Business type: ${sanitizedContext.businessType}
+- Service area: ${sanitizedContext.serviceArea}
+- Key differentiators: ${sanitizedContext.keyDifferentiators}
+- Pricing model: ${sanitizedContext.pricing}
+
+Focus on ${sanitizedContext.businessModel || "general"} search patterns and include location context only if businessType is "local".`,
         },
       ],
       temperature: 0.7,
@@ -111,9 +153,20 @@ Example format: ["question 1", "question 2", "question 3"]`,
 
     return JSON.parse(content);
   } catch (error) {
-    console.error("Error generating contextual questions:", error);
+    console.error("Error generating customer intent questions:", error);
     throw error;
   }
+}
+
+function generateFallbackQuestions(businessSummary: any): string[] {
+  const service = businessSummary.whatTheyDo || "service";
+  const location = businessSummary.cityAndCountry || "your area";
+
+  return [
+    `Who are the top ${service} providers?`,
+    `What are the best ${service} companies near me?`,
+    `Which ${service} company should I choose?`,
+  ];
 }
 
 export async function POST(request: NextRequest) {
@@ -127,16 +180,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Classify business type
-    const businessType = await classifyBusinessType(businessSummary);
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not configured, using fallback questions");
+      return NextResponse.json({
+        questions: generateFallbackQuestions(businessSummary),
+        businessType: { type: "unknown", reasoning: "API unavailable" },
+      });
+    }
 
-    // Step 2: Generate contextual questions
-    const questions = await generateContextualQuestions(
-      businessSummary,
-      businessType
-    );
+    try {
+      // Generate customer intent questions using new approach
+      const questions = await generateCustomerIntentQuestions(businessSummary);
 
-    return NextResponse.json({ questions, businessType });
+      return NextResponse.json({
+        questions,
+        businessType: {
+          type: businessSummary.businessType || "unknown",
+          reasoning: "Generated using customer intent patterns",
+        },
+      });
+    } catch (apiError) {
+      console.error("OpenAI API Error:", apiError);
+      console.log("Falling back to generated questions");
+
+      return NextResponse.json({
+        questions: generateFallbackQuestions(businessSummary),
+        businessType: { type: "unknown", reasoning: "API error" },
+      });
+    }
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

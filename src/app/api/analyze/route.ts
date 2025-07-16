@@ -13,21 +13,39 @@ async function createBusinessSummary(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are a business analyst. Analyze the provided website content and extract key business information. Return ONLY a JSON object with these exact fields:
+          content: `You are an expert business analyst with deep knowledge of industry classifications and business models. Analyze website content to extract comprehensive business intelligence.
+
+Extract information and return ONLY a valid JSON object with this exact structure:
+
 {
-  "companyName": "The exact name of the company",
-  "whatTheyDo": "Brief description of what the company/entity does",
-  "whoTheyServe": "Description of their target audience/customers",
-  "cityAndCountry": "City and country where they are based",
-  "servicesOffered": "Any services they offer",
-  "pricing": "How much they charge for their services/products"
+  "companyName": "Exact company name as it appears",
+  "whatTheyDo": "Clear, benefit-focused description of their main value proposition",
+  "whoTheyServe": "Specific target audience with demographics/psychographics when available",
+  "cityAndCountry": "Primary business location in format 'City, Country'",
+  "servicesOffered": "Comma-separated list of main services/products",
+  "pricing": "Specific pricing info, ranges, or pricing model (subscription, one-time, custom, etc.)",
+  "businessType": "local|national|international|online|hybrid",
+  "industry": "Primary industry using standard classifications (e.g., 'Healthcare', 'Financial Services', 'E-commerce')",
+  "businessModel": "B2B|B2C|B2B2C|marketplace|subscription|freemium|other",
+  "companySize": "startup|small|medium|large|enterprise",
+  "keyDifferentiators": "Unique selling propositions or competitive advantages",
+  "serviceArea": "Geographic service area if applicable",
+  "foundedYear": "Year founded if mentioned",
+  "socialProof": "Notable clients, testimonials, awards, or credibility indicators"
 }
 
-If you cannot determine any field, use "Not found" as the value.`,
+Analysis guidelines:
+- Infer business model from context clues (payment terms, customer types, etc.)
+- Determine company size from team size, client base, or revenue indicators
+- Look for implied pricing in case studies or service descriptions
+- Extract competitive advantages from marketing copy
+- Use "Not found" only when information is completely absent
+
+Be thorough - look for subtle indicators and context clues throughout the content.`,
         },
         {
           role: "user",
-          content: `Analyze this website content and extract business information:\n\n${content.substring(0, 10000)}`,
+          content: `Analyze this website content and extract comprehensive business intelligence:\n\n${content.substring(0, 10000)}`,
         },
       ],
       temperature: 0.3,
@@ -36,7 +54,7 @@ If you cannot determine any field, use "Not found" as the value.`,
     const result = response.choices[0]?.message?.content;
     return JSON.parse(
       result ||
-        '{"companyName": "Not found", "whatTheyDo": "Not found", "whoTheyServe": "Not found", "cityAndCountry": "Not found", "servicesOffered": "Not found", "pricing": "Not found"}'
+        '{"companyName": "Not found", "whatTheyDo": "Not found", "whoTheyServe": "Not found", "cityAndCountry": "Not found", "servicesOffered": "Not found", "pricing": "Not found", "businessType": "Not found", "industry": "Not found", "businessModel": "Not found", "companySize": "Not found", "keyDifferentiators": "Not found", "serviceArea": "Not found", "foundedYear": "Not found", "socialProof": "Not found"}'
     );
   } catch (error) {
     console.error("OpenAI summary error:", error);
@@ -47,6 +65,14 @@ If you cannot determine any field, use "Not found" as the value.`,
       cityAndCountry: "Not found",
       servicesOffered: "Not found",
       pricing: "Not found",
+      businessType: "Not found",
+      industry: "Not found",
+      businessModel: "Not found",
+      companySize: "Not found",
+      keyDifferentiators: "Not found",
+      serviceArea: "Not found",
+      foundedYear: "Not found",
+      socialProof: "Not found",
     };
   }
 }

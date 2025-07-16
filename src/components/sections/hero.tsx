@@ -347,6 +347,22 @@ export default function Hero() {
                       {result.businessSummary?.servicesOffered || "Not found"}
                     </p>
                   </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
+                      Industry
+                    </h4>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                      {result.businessSummary?.industry || "Not found"}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground sm:text-base">
+                      Business Type
+                    </h4>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                      {result.businessSummary?.businessType || "Not found"}
+                    </p>
+                  </div>
                   <div className="space-y-2 lg:col-span-2">
                     <h4 className="text-sm font-medium text-foreground sm:text-base">
                       Pricing

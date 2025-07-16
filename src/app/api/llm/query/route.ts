@@ -12,6 +12,9 @@ const LLM_ENDPOINTS = [
 
 export async function POST(request: NextRequest) {
   try {
+    // TEMPORARILY CLEAR CACHE FOR TESTING
+    cache.clear();
+
     const { questions, companyName, url } = await request.json();
 
     console.log("=== LLM QUERY INITIATED ===");
@@ -30,15 +33,15 @@ export async function POST(request: NextRequest) {
     // Create cache key based on URL
     const cacheKey = `llm-results-${url}`;
 
-    // Check cache first
-    if (cache.has(cacheKey)) {
-      console.log("Returning cached LLM results for:", url);
-      return NextResponse.json({
-        success: true,
-        data: cache.get(cacheKey),
-        cached: true,
-      });
-    }
+    // TEMPORARILY DISABLED FOR TESTING - Check cache first
+    // if (cache.has(cacheKey)) {
+    //   console.log("Returning cached LLM results for:", url);
+    //   return NextResponse.json({
+    //     success: true,
+    //     data: cache.get(cacheKey),
+    //     cached: true,
+    //   });
+    // }
 
     const results = [];
 
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Cache the results
-    cache.set(cacheKey, results);
+    // TEMPORARILY DISABLED FOR TESTING - cache.set(cacheKey, results);
 
     // Set cache expiration (optional - clear after 1 hour)
     setTimeout(
