@@ -132,8 +132,14 @@ export default function Hero() {
         generatedQuestions: data.questions,
       }));
 
-      // Query LLMs with the generated questions
-      if (data.questions && businessSummary.companyName && url) {
+      // Query LLMs with the generated questions only if business analysis was successful
+      const hasValidBusinessData =
+        businessSummary.companyName &&
+        businessSummary.companyName !== "Not found" &&
+        businessSummary.industry &&
+        businessSummary.industry !== "Not found";
+
+      if (data.questions && hasValidBusinessData && url) {
         console.log("=== TRIGGERING LLM QUERIES ===");
         console.log("Questions generated:", data.questions);
         console.log("Company name:", businessSummary.companyName);
@@ -158,7 +164,9 @@ export default function Hero() {
       } else {
         console.log("=== LLM QUERY SKIPPED ===");
         console.log("Has questions:", !!data.questions);
-        console.log("Has company name:", !!businessSummary.companyName);
+        console.log("Has valid business data:", hasValidBusinessData);
+        console.log("Company name:", businessSummary.companyName);
+        console.log("Industry:", businessSummary.industry);
         console.log("Has URL:", !!url);
         console.log("========================");
       }
@@ -240,9 +248,8 @@ export default function Hero() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-3xl text-balance px-4 text-center text-base text-muted-foreground sm:mt-6 sm:px-0 md:text-xl">
-            Optimize your content to be the top-cited source in ChatGPT,
-            Perplexity, and Google SGE. Stop losing traffic to AI-generated
-            answers
+            Optimize your content to be the top-cited source in ChatGPT, Claude,
+            Perplexity, and Gemini. Stop losing traffic to AI-generated answers
           </p>
 
           <div className="mx-auto mt-6 flex flex-col items-center justify-center space-y-4 sm:mt-8">
@@ -414,6 +421,7 @@ export default function Hero() {
                 }
                 title="Website Analysis Performance"
                 className="mt-8"
+                domain={result.businessSummary?.websiteUrl || url}
               />
             )}
           </div>

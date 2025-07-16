@@ -202,34 +202,80 @@ export class WebScraper {
 
   static async scrapeWebsite(url: string): Promise<ScrapedContent> {
     try {
-      // Fetch the webpage with optimized settings
-      const response = await axios.get(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        },
-        timeout: 8000, // Reduced from 30000
-        maxContentLength: 1000000, // Limit content size to 1MB
-        maxBodyLength: 1000000,
-      });
+      // Fetch the webpage with optimized settings and retry logic
+      let response;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries) {
+        try {
+          response = await axios.get(url, {
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9",
+              "Accept-Encoding": "gzip, deflate, br",
+              Connection: "keep-alive",
+              "Upgrade-Insecure-Requests": "1",
+            },
+            timeout: 15000, // Increased timeout
+            maxContentLength: 2000000, // Increased to 2MB
+            maxBodyLength: 2000000,
+            validateStatus: (status) => status >= 200 && status < 400, // Accept redirects
+          });
+          break;
+        } catch (error) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          // Wait before retry
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retryCount)
+          );
+        }
+      }
+
+      if (!response) {
+        throw new Error("Failed to get response after retries");
+      }
 
       const $ = cheerio.load(response.data);
 
-      // Extract content
+      // Extract content with better error handling
+      const content = this.extractMainContent($);
+
+      // If content is too short, try alternative extraction methods
+      let finalContent = content;
+      if (content.length < 100) {
+        console.warn(
+          `Short content detected (${content.length} chars), trying alternative extraction`
+        );
+        finalContent = this.extractAlternativeContent($);
+      }
+
       const scrapedContent: ScrapedContent = {
         url,
         title: $("title").text().trim() || $("h1").first().text().trim() || "",
-        description: $('meta[name="description"]').attr("content") || "",
-        content: this.extractMainContent($),
+        description:
+          $('meta[name="description"]').attr("content") ||
+          $('meta[property="og:description"]').attr("content") ||
+          "",
+        content: finalContent,
         headings: this.extractHeadings($),
         links: this.extractLinks($, url),
         images: this.extractImages($, url),
         metadata: this.extractMetadata($),
       };
 
+      console.log(
+        `Scraped ${url}: ${scrapedContent.content.length} characters`
+      );
       return scrapedContent;
     } catch (error) {
-      console.error("Scraping error:", error);
+      console.error("Scraping error for", url, ":", error);
       throw new Error(
         `Failed to scrape ${url}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -303,6 +349,70 @@ export class WebScraper {
     }
 
     return "";
+  }
+
+  private static extractAlternativeContent($: cheerio.CheerioAPI): string {
+    // Remove unwanted elements
+    $(
+      "script, style, nav, header, aside, .advertisement, .ads, .cookie, .popup, .modal"
+    ).remove();
+
+    // Try multiple extraction strategies
+    const strategies = [
+      // Strategy 1: Try to find any content containers
+      () => {
+        const containers = $("div, section, article, p").filter((_, el) => {
+          const text = $(el).text().trim();
+          return text.length > 50 && text.length < 2000;
+        });
+        return containers
+          .map((_, el) => $(el).text().trim())
+          .get()
+          .join(" ");
+      },
+
+      // Strategy 2: Extract all paragraph text
+      () => {
+        return $("p")
+          .map((_, el) => $(el).text().trim())
+          .get()
+          .join(" ");
+      },
+
+      // Strategy 3: Extract all text content from divs
+      () => {
+        return $("div")
+          .map((_, el) => {
+            const text = $(el).text().trim();
+            return text.length > 10 && text.length < 500 ? text : "";
+          })
+          .get()
+          .filter(Boolean)
+          .join(" ");
+      },
+
+      // Strategy 4: Last resort - get all body text
+      () => {
+        return $("body").text().replace(/\s+/g, " ").trim();
+      },
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        const content = strategy();
+        if (content && content.length > 100) {
+          console.log(
+            `Alternative extraction successful: ${content.length} characters`
+          );
+          return content.substring(0, 10000);
+        }
+      } catch (error) {
+        console.warn("Alternative extraction strategy failed:", error);
+      }
+    }
+
+    // If all strategies fail, return whatever we can get
+    return $("body").text().substring(0, 10000).replace(/\s+/g, " ").trim();
   }
 
   private static extractHeadings($: cheerio.CheerioAPI): string[] {

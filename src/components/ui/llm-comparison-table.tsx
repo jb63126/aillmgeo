@@ -20,12 +20,14 @@ interface LLMComparisonTableProps {
   data: QueryResult[];
   title?: string;
   className?: string;
+  domain?: string;
 }
 
 const LLMComparisonTable = ({
   data,
   title = "LLM Performance Comparison",
   className = "",
+  domain,
 }: LLMComparisonTableProps) => {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
@@ -50,6 +52,31 @@ const LLMComparisonTable = ({
     a.download = "llm-comparison.csv";
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const handleLoginForResults = () => {
+    if (typeof window !== "undefined") {
+      // Generate unique search ID
+      const searchId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Store search data in session storage
+      sessionStorage.setItem(
+        `flowql_search_${searchId}`,
+        JSON.stringify({
+          data,
+          domain,
+          timestamp: Date.now(),
+        })
+      );
+
+      // Navigate to dashboard with search parameters
+      const params = new URLSearchParams({
+        search: searchId,
+        ...(domain && { domain }),
+      });
+
+      window.location.href = `/dashboard?${params.toString()}`;
+    }
   };
 
   const ResultIcon = ({
@@ -149,8 +176,8 @@ const LLMComparisonTable = ({
                 <p className="text-sm text-muted-foreground">
                   Login to view all comparison data
                 </p>
-                <Button>
-                  <a href="/login">Login to see full results</a>
+                <Button onClick={handleLoginForResults}>
+                  Login to see full results
                 </Button>
               </div>
             </div>
@@ -193,8 +220,11 @@ const LLMComparisonTable = ({
                   <p className="text-xs text-muted-foreground">
                     Login to view all comparison data
                   </p>
-                  <Button className="w-full text-sm">
-                    <a href="/login">Login to see full results</a>
+                  <Button
+                    className="w-full text-sm"
+                    onClick={handleLoginForResults}
+                  >
+                    Login to see full results
                   </Button>
                 </div>
               </div>

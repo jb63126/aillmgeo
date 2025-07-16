@@ -1,7 +1,6 @@
 import { type Metadata } from "next";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
-import Script from "next/script";
 import Header from "~/components/layout/header";
 import ThemeProvider from "~/components/shared/theme-provider";
 import { Toaster } from "~/components/ui/toaster";
@@ -29,24 +28,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     description: site.description,
     keywords: [
-      "Next.js",
-      "Shadcn/ui",
-      "LuciaAuth",
-      "Prisma",
-      "Vercel",
-      "Tailwind",
-      "Radix UI",
-      "Stripe",
-      "Internationalization",
-      "Postgres",
+      "AI Search",
+      "ChatGPT",
+      "Perplexity",
+      "Google SGE",
+      "Brand Monitoring",
+      "AI Content Optimization",
+      "LLM Analysis",
+      "Search Engine Optimization",
+      "AI Citations",
+      "Content Strategy",
     ],
     authors: [
       {
-        name: "moinulmoin",
-        url: "https://moinulmoin.com",
+        name: "FlowQL",
+        url: "https://www.flowql.com",
       },
     ],
-    creator: "Moinul Moin",
+    creator: "FlowQL",
     openGraph: {
       type: "website",
       locale: locale,
@@ -68,7 +67,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: site.name,
       description: site.description,
       images: [siteOgImage],
-      creator: "@immoinulmoin",
+      creator: "@flowql",
     },
     icons: {
       icon: "/favicon.ico",
@@ -138,13 +137,6 @@ export default async function RootLayout({
           <Toaster />
         </ThemeProvider>
       </body>
-      {/* remove this line when you are working on your own project */}
-      {process.env.NODE_ENV === "production" && (
-        <Script
-          src="https://umami.moinulmoin.com/script.js"
-          data-website-id="bc66d96a-fc75-4ecd-b0ef-fdd25de8113c"
-        />
-      )}
     </html>
   );
 }
