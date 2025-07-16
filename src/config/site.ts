@@ -2,7 +2,7 @@ export const siteUrl =
   process.env.NEXT_PUBLIC_APP_URL || "https://chadnext.moinulmoin.com";
 
 export const siteConfig = (locale: string = "en") => ({
-  name: "ChadNext",
+  name: "FlowQL",
   url: siteUrl + "/" + locale,
   ogImage: `${siteUrl}/${locale}/opengraph-image`,
   description: "Quick Starter Template for your Next project.",

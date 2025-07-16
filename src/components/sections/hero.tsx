@@ -89,11 +89,15 @@ export default function Hero() {
       console.log("Location:", data.businessSummary?.location);
       console.log("===================");
 
-      setResult(data);
+      // Add the normalized URL to the result for caching
+      setResult({
+        ...data,
+        url: normalizedUrl,
+      });
 
       // Automatically generate questions after business analysis completes
       if (data.businessSummary) {
-        generateQuestions(data.businessSummary);
+        generateQuestions(data.businessSummary, normalizedUrl);
       }
     } catch (err) {
       setError(
@@ -104,7 +108,7 @@ export default function Hero() {
     }
   };
 
-  const generateQuestions = async (businessSummary: any) => {
+  const generateQuestions = async (businessSummary: any, url: string) => {
     setIsGeneratingQuestions(true);
 
     try {
@@ -127,10 +131,84 @@ export default function Hero() {
         ...prev,
         generatedQuestions: data.questions,
       }));
+
+      // Query LLMs with the generated questions
+      if (data.questions && businessSummary.companyName && url) {
+        console.log("=== TRIGGERING LLM QUERIES ===");
+        console.log("Questions generated:", data.questions);
+        console.log("Company name:", businessSummary.companyName);
+        console.log("URL:", url);
+        console.log("=============================");
+
+        const llmResults = await queryLLMs(
+          data.questions,
+          businessSummary.companyName,
+          url
+        );
+
+        console.log("=== LLM RESULTS RECEIVED ===");
+        console.log("Results:", llmResults);
+        console.log("===========================");
+
+        // Update result with real LLM data
+        setResult((prev: any) => ({
+          ...prev,
+          llmResults: llmResults,
+        }));
+      } else {
+        console.log("=== LLM QUERY SKIPPED ===");
+        console.log("Has questions:", !!data.questions);
+        console.log("Has company name:", !!businessSummary.companyName);
+        console.log("Has URL:", !!url);
+        console.log("========================");
+      }
     } catch (err) {
       console.error("Error generating questions:", err);
     } finally {
       setIsGeneratingQuestions(false);
+    }
+  };
+
+  const queryLLMs = async (
+    questions: string[],
+    companyName: string,
+    url: string
+  ) => {
+    console.log("=== QUERY LLMS FUNCTION CALLED ===");
+    console.log("About to call /api/llm/query");
+    console.log("====================================");
+
+    try {
+      const response = await fetch("/api/llm/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          questions,
+          companyName,
+          url,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to query LLMs");
+      }
+
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error("Error querying LLMs:", error);
+      // Return fallback data structure
+      return questions.map((question) => ({
+        query: question,
+        results: [
+          { llm: "ChatGPT", result: false, status: "Fail" },
+          { llm: "Perplexity", result: false, status: "Fail" },
+          { llm: "Claude", result: false, status: "Fail" },
+          { llm: "Gemini", result: false, status: "Fail" },
+        ],
+      }));
     }
   };
 
@@ -141,6 +219,7 @@ export default function Hero() {
         { llm: "ChatGPT", result: Math.random() > 0.3 },
         { llm: "Perplexity", result: Math.random() > 0.4 },
         { llm: "Claude", result: Math.random() > 0.3 },
+        { llm: "Gemini", result: Math.random() > 0.3 },
       ],
     }));
   };
@@ -225,6 +304,16 @@ export default function Hero() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6">
+                {/* Company Name - Full Width */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground sm:text-base">
+                    Company Name
+                  </h4>
+                  <p className="text-xs font-semibold text-muted-foreground sm:text-sm">
+                    {result.businessSummary?.companyName || "Not found"}
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-foreground sm:text-base">
@@ -301,9 +390,11 @@ export default function Hero() {
             ) : (
               <LLMComparisonTable
                 data={
-                  result.generatedQuestions
-                    ? createDynamicTableData(result.generatedQuestions)
-                    : websiteAnalysisQueries
+                  result.llmResults
+                    ? result.llmResults
+                    : result.generatedQuestions
+                      ? createDynamicTableData(result.generatedQuestions)
+                      : websiteAnalysisQueries
                 }
                 title="Website Analysis Performance"
                 className="mt-8"

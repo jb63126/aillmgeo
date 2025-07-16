@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 interface LLMResult {
   llm: string;
   result: boolean;
+  status?: string;
 }
 
 interface QueryResult {
@@ -51,9 +52,17 @@ const LLMComparisonTable = ({
     window.URL.revokeObjectURL(url);
   };
 
-  const ResultIcon = ({ result }: { result: boolean }) => (
+  const ResultIcon = ({
+    result,
+    status,
+  }: {
+    result: boolean;
+    status?: string;
+  }) => (
     <div className="flex items-center justify-center">
-      {result ? (
+      {status === "Fail" ? (
+        <span className="text-xs font-bold text-orange-500">Fail</span>
+      ) : result ? (
         <Check
           className="h-5 w-5 font-bold text-green-500 transition-transform duration-200 hover:scale-110"
           strokeWidth={3}
@@ -118,7 +127,10 @@ const LLMComparisonTable = ({
                   </td>
                   {item.results.map((result, resultIndex) => (
                     <td key={resultIndex} className="p-4 text-center">
-                      <ResultIcon result={result.result} />
+                      <ResultIcon
+                        result={result.result}
+                        status={result.status}
+                      />
                     </td>
                   ))}
                 </tr>
@@ -164,7 +176,7 @@ const LLMComparisonTable = ({
                     <div className="text-xs font-medium text-muted-foreground">
                       {result.llm}
                     </div>
-                    <ResultIcon result={result.result} />
+                    <ResultIcon result={result.result} status={result.status} />
                   </div>
                 ))}
               </div>

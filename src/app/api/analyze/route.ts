@@ -15,6 +15,7 @@ async function createBusinessSummary(content: string) {
           role: "system",
           content: `You are a business analyst. Analyze the provided website content and extract key business information. Return ONLY a JSON object with these exact fields:
 {
+  "companyName": "The exact name of the company",
   "whatTheyDo": "Brief description of what the company/entity does",
   "whoTheyServe": "Description of their target audience/customers",
   "cityAndCountry": "City and country where they are based",
@@ -35,11 +36,12 @@ If you cannot determine any field, use "Not found" as the value.`,
     const result = response.choices[0]?.message?.content;
     return JSON.parse(
       result ||
-        '{"whatTheyDo": "Not found", "whoTheyServe": "Not found", "cityAndCountry": "Not found", "servicesOffered": "Not found", "pricing": "Not found"}'
+        '{"companyName": "Not found", "whatTheyDo": "Not found", "whoTheyServe": "Not found", "cityAndCountry": "Not found", "servicesOffered": "Not found", "pricing": "Not found"}'
     );
   } catch (error) {
     console.error("OpenAI summary error:", error);
     return {
+      companyName: "Not found",
       whatTheyDo: "Not found",
       whoTheyServe: "Not found",
       cityAndCountry: "Not found",
