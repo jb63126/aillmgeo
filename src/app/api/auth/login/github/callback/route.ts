@@ -2,7 +2,6 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { ArcticFetchError, OAuth2RequestError } from "arctic";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { sendWelcomeEmail } from "~/lib/server/mail";
 import { setSessionTokenCookie } from "~/lib/server/auth/cookies";
 import { github } from "~/lib/server/auth/github";
 import { createSession, generateSessionToken } from "~/lib/server/auth/session";
@@ -85,9 +84,7 @@ export const GET = async (request: Request) => {
       },
     });
 
-    if (githubUser.email) {
-      sendWelcomeEmail({ toMail: newUser.email!, userName: newUser.name! });
-    }
+    // Welcome email functionality removed
     const sessionTokenCookie = generateSessionToken();
     const session = await createSession(sessionTokenCookie, newUser.id);
     await setSessionTokenCookie(sessionTokenCookie, session.expiresAt);
