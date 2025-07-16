@@ -45,7 +45,7 @@ export default function LLMComparisonDemo() {
     <div className="mx-auto w-full max-w-7xl space-y-8">
       {/* Header */}
       <div className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
           LLM Performance Comparison
         </h1>
         <p className="mx-auto max-w-3xl text-lg text-muted-foreground">
@@ -81,7 +81,7 @@ export default function LLMComparisonDemo() {
                 <CardTitle className="text-lg">{stat.llm}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="mb-2 text-3xl font-bold">
+                <div className="mb-2 text-3xl font-bold text-foreground">
                   {stat.successRate}%
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export default function LLMComparisonDemo() {
         <CardContent>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <h3 className="mb-2 font-semibold">Strengths</h3>
+              <h3 className="mb-2 font-semibold text-foreground">Strengths</h3>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• All models excel at basic information extraction</li>
                 <li>• Company identification and core business analysis</li>
@@ -137,7 +137,7 @@ export default function LLMComparisonDemo() {
               </ul>
             </div>
             <div>
-              <h3 className="mb-2 font-semibold">Challenges</h3>
+              <h3 className="mb-2 font-semibold text-foreground">Challenges</h3>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• Pricing information often unavailable on websites</li>
                 <li>• Team size and workforce details rarely public</li>

@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2017",
-    "types": [
-      "@serwist/next/typings"
-    ],
+    "types": [],
     "lib": [
       "dom",
       "dom.iterable",
