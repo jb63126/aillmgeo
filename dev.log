@@ -1,81 +1,33 @@
 
-> chadnext@1.7.0 dev
+> chadnext@1.7.0 dev /home/jacob_buerke/aillmgeo
 > prisma generate && next dev --turbo
 
 Prisma schema loaded from prisma/schema.prisma
 
-✔ Generated Prisma Client (v6.2.1) to ./node_modules/.pnpm/@prisma+client@6.2.1_prisma@6.2.1/node_modules/@prisma/client in 179ms
+✔ Generated Prisma Client (v6.2.1) to ./node_modules/.pnpm/@prisma+client@6.2.1_prisma@6.2.1/node_modules/@prisma/client in 184ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
 
- ⚠ Port 3000 is in use, using available port 3001 instead.
    ▲ Next.js 15.3.2 (Turbopack)
-   - Local:        http://localhost:3001
-   - Network:      http://10.255.255.254:3001
+   - Local:        http://localhost:3000
+   - Network:      http://10.255.255.254:3000
    - Environments: .env.local
 
  ✓ Starting...
  ○ Compiling middleware ...
- ✓ Compiled middleware in 725ms
- ✓ Ready in 4.1s
- ⚠ Webpack is configured while Turbopack is not, which may cause problems.
- ⚠ See instructions if you need to configure Turbopack:
-  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
-
+ ✓ Compiled middleware in 754ms
+ ✓ Ready in 3.8s
  ○ Compiling /[locale] ...
 Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
   npx update-browserslist-db@latest
   Why you should do it regularly: https://github.com/browserslist/update-db#readme
- ✓ Compiled /[locale] in 12.9s
- GET /en/ 200 in 15587ms
+ ✓ Compiled /[locale] in 10.8s
+ GET /en/ 200 in 13106ms
  ○ Compiling /api/analyze ...
- ✓ Compiled /api/analyze in 6.1s
-Scraping website: https://www.greenbriar.com/
-Scraping error: Error [AxiosError]: Request failed with status code 403
-    at async WebScraper.scrapeWebsite (src/lib/scraper.ts:215:23)
-    at async POST (src/app/api/analyze/route.ts:77:27)
-  213 |     try {
-  214 |       // Fetch the webpage with optimized settings
-> 215 |       const response = await axios.get(url, {
-      |                       ^
-  216 |         headers: {
-  217 |           "User-Agent":
-  218 |             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36", {
-  code: 'ERR_BAD_REQUEST',
-  config: [Object],
-  request: [ClientRequest],
-  response: [Object],
-  status: 403,
-  constructor: [Function],
-  toJSON: [Function: toJSON]
-}
-Analysis error: Error: Failed to scrape https://www.greenbriar.com/: Request failed with status code 403
-    at WebScraper.scrapeWebsite (src/lib/scraper.ts:245:12)
-    at async POST (src/app/api/analyze/route.ts:77:27)
-  243 |     } catch (error) {
-  244 |       console.error("Scraping error:", error);
-> 245 |       throw new Error(
-      |            ^
-  246 |         `Failed to scrape ${url}: ${error instanceof Error ? error.message : "Unknown error"}`
-  247 |       );
-  248 |     }
- POST /api/analyze/ 500 in 7941ms
-Scraping website: https://www.rebeccafryedesign.com/
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Boutique full-service residential interior design studio',
-  whoTheyServe: 'Not found',
-  cityAndCountry: 'Not found',
-  servicesOffered: 'Residential interior design services',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 3102ms
- ○ Compiling /api/generate-questions ...
- ✓ Compiled /api/generate-questions in 2.1s
- POST /api/generate-questions/ 200 in 3465ms
-Scraping website: https://www.starfish-network.com/
+ ✓ Compiled /api/analyze in 5.6s
+Scraping website: https://starfish-network.com
 Creating OpenAI summary for business information...
 OpenAI Summary: {
   whatTheyDo: 'Starfish offers a universal foundation for supply chain data exchange, empowering businesses and solution providers to connect and share traceability data seamlessly across platforms.',
@@ -84,132 +36,7 @@ OpenAI Summary: {
   servicesOffered: 'Starfish simplifies the complex task of data exchange by handling data translations and building connectors on behalf of their clients. They also offer compliance-focused solutions and promote sustainability in supply chains.',
   pricing: 'Not found'
 }
- POST /api/analyze/ 200 in 3437ms
- POST /api/generate-questions/ 200 in 1175ms
- POST /api/analyze/ 400 in 178ms
-Scraping website: https://rebeccafryedesign.com/
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Boutique full-service residential interior design studio',
-  whoTheyServe: 'Not found',
-  cityAndCountry: 'Not found',
-  servicesOffered: 'Residential interior design services',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 2726ms
- POST /api/generate-questions/ 200 in 1179ms
-Scraping website: https://rebeccafryedesign.com/
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Boutique full-service residential interior design studio',
-  whoTheyServe: 'Personal and elevated homes',
-  cityAndCountry: 'Not found',
-  servicesOffered: 'Residential interior design services',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 2838ms
- POST /api/generate-questions/ 200 in 971ms
- ✓ Compiled in 791ms
- ✓ Compiled in 797ms
- ✓ Compiled in 622ms
-Scraping website: https://www.rebeccafryedesign.com
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Boutique full-service residential interior design studio',
-  whoTheyServe: 'Not found',
-  cityAndCountry: 'Not found',
-  servicesOffered: 'Residential interior design services',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 3121ms
- POST /api/generate-questions/ 200 in 835ms
- ✓ Compiled in 830ms
- ✓ Compiled in 659ms
-Scraping website: https://starfish-network.com
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Starfish offers a universal foundation for supply chain data exchange, empowering businesses and solution providers to connect and share traceability data seamlessly across platforms.',
-  whoTheyServe: 'Not found',
-  cityAndCountry: 'New York, NY, USA',
-  servicesOffered: 'Starfish simplifies the complex task of data exchange by handling data translations and building connectors on behalf of their clients. They also offer compliance-focused solutions and promote sustainable practices in supply chains.',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 3514ms
- POST /api/generate-questions/ 200 in 1865ms
- ✓ Compiled in 614ms
- ✓ Compiled in 534ms
- ✓ Compiled in 509ms
-Scraping website: https://starfish-network.com
-Creating OpenAI summary for business information...
-OpenAI Summary: {
-  whatTheyDo: 'Starfish offers a universal foundation for supply chain data exchange, empowering businesses and solution providers to connect and share traceability data seamlessly across platforms.',
-  whoTheyServe: 'Not found',
-  cityAndCountry: 'New York, NY, USA',
-  servicesOffered: 'Starfish simplifies the complex task of data exchange by handling data translations and building connectors on behalf of their clients. They offer compliance-focused solutions and promote sustainability in supply chains.',
-  pricing: 'Not found'
-}
- POST /api/analyze/ 200 in 3487ms
- POST /api/gBrowserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
- ✓ Compiled middleware in 14ms
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
-
------
-[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-c8863d8bc971717941792f0935532fbc.log.
-
-To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Next.js%20package%20not%20found&body=Turbopack%20version%3A%20%603def5ff9%60%0A%0AError%20message%3A%0A%60%60%60%0ANext.js%20package%20not%20found%0A%0ADebug%20info%3A%0A-%20Execution%20of%20subscribe_issues_and_diags_operation%20failed%0A-%20Execution%20of%20endpoint_server_changed_operation%20failed%0A-%20Execution%20of%20pick_endpoint%20failed%0A-%20Execution%20of%20entrypoints_without_collectibles_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20get_next_package%20failed%0A-%20Next.js%20package%20not%20found%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
------
-
-[Error [TurbopackInternalError]: Next.js package not found
-
-Debug info:
-- Execution of get_entrypoints_with_issues_operation failed
-- Execution of EntrypointsOperation::new failed
-- Execution of Project::entrypoints failed
-- Execution of AppProject::routes failed
-- Execution of directory_tree_to_entrypoints_internal failed
-- Execution of get_next_package failed
-- Next.js package not found]
-[?25h
-serslist/update-db#readme
- ✓ Compiled middleware in 7ms
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
-
------
-[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-a729d4ba11bb1c513daf18331edf6d0b.log.
-
-To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Next.js%20package%20not%20found&body=Turbopack%20version%3A%20%603def5ff9%60%0A%0AError%20message%3A%0A%60%60%60%0ANext.js%20package%20not%20found%0A%0ADebug%20info%3A%0A-%20Execution%20of%20subscribe_issues_and_diags_operation%20failed%0A-%20Execution%20of%20endpoint_server_changed_operation%20failed%0A-%20Execution%20of%20pick_endpoint%20failed%0A-%20Execution%20of%20entrypoints_without_collectibles_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20get_next_package%20failed%0A-%20Next.js%20package%20not%20found%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
------
-
-
------
-[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-a729d4ba11bb1c513daf18331edf6d0b.log.
-
-To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Next.js%20package%20not%20found&body=Turbopack%20version%3A%20%603def5ff9%60%0A%0AError%20message%3A%0A%60%60%60%0ANext.js%20package%20not%20found%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20get_next_package%20failed%0A-%20Next.js%20package%20not%20found%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
------
-
-[Error [TurbopackInternalError]: Next.js package not found
-
-Debug info:
-- Execution of get_entrypoints_with_issues_operation failed
-- Execution of EntrypointsOperation::new failed
-- Execution of Project::entrypoints failed
-- Execution of AppProject::routes failed
-- Execution of directory_tree_to_entrypoints_internal failed
-- Execution of get_next_package failed
-- Next.js package not found]
-[?25h
+ POST /api/analyze/ 200 in 9421ms
+ ○ Compiling /api/generate-questions ...
+ ✓ Compiled /api/generate-questions in 2s
+ POST /api/generate-questions/ 200 in 3110ms

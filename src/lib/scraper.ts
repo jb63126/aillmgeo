@@ -1,6 +1,5 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { redis } from "./database";
 
 export interface ScrapedContent {
   url: string;
@@ -202,14 +201,6 @@ export class WebScraper {
   }
 
   static async scrapeWebsite(url: string): Promise<ScrapedContent> {
-    // Check cache first
-    const cacheKey = `scrape:${url}`;
-    const cached = await redis.get();
-
-    if (cached) {
-      return JSON.parse(cached);
-    }
-
     try {
       // Fetch the webpage with optimized settings
       const response = await axios.get(url, {
@@ -235,9 +226,6 @@ export class WebScraper {
         images: this.extractImages($, url),
         metadata: this.extractMetadata($),
       };
-
-      // Cache the result
-      await redis.setex();
 
       return scrapedContent;
     } catch (error) {

@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebScraper } from "~/lib/scraper";
-import {
-  createWebsite,
-  updateWebsiteContent,
-  insertAnalysis,
-} from "~/lib/database";
 import OpenAI from "openai";
 
 async function createBusinessSummary(content: string) {
@@ -80,22 +75,11 @@ export async function POST(request: NextRequest) {
     const contentLength = scrapedContent.content.length;
     const isContentTruncated = contentLength >= 10000;
 
-    // Step 2: Save to database (using scraped content)
-    const website = await createWebsite(
-      url,
-      scrapedContent.title,
-      scrapedContent.description
-    );
-    await updateWebsiteContent(website.id, scrapedContent.content);
-
-    // Step 3: Create OpenAI summary
+    // Step 2: Create OpenAI summary
     console.log("Creating OpenAI summary for business information...");
     const openAISummary = await createBusinessSummary(scrapedContent.content);
 
     console.log("OpenAI Summary:", openAISummary);
-
-    // Save OpenAI summary to database
-    await insertAnalysis(website.id, "openai_summary", openAISummary);
 
     // Generate favicon URL
     const urlObj = new URL(url);
@@ -104,7 +88,6 @@ export async function POST(request: NextRequest) {
     // Return results
     return NextResponse.json({
       success: true,
-      websiteId: website.id,
       url,
       faviconUrl,
       scrapedContent: {

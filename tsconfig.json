@@ -29,9 +29,6 @@
     "paths": {
       "~/*": [
         "./src/*"
-      ],
-      "content": [
-        "./.velite"
       ]
     }
   },
@@ -44,7 +41,6 @@
   "exclude": [
     "node_modules",
     ".next",
-    ".velite",
     "public/sw.js"
   ]
 }
