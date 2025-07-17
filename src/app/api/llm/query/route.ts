@@ -32,10 +32,11 @@ export async function POST(request: NextRequest) {
 
     // Get the base URL for internal API calls
     // Use production domain instead of preview deployment to avoid auth protection
-    const baseUrl =
-      process.env.NODE_ENV === "production"
-        ? "https://www.flowql.com"
-        : process.env.NEXTAUTH_URL || "http://localhost:3000";
+    console.log("🚀 [LLM DEBUG] NODE_ENV:", process.env.NODE_ENV);
+    console.log("🚀 [LLM DEBUG] VERCEL_URL:", process.env.VERCEL_URL);
+
+    // Force production domain to avoid auth protection on preview deployments
+    const baseUrl = "https://www.flowql.com";
 
     console.log("🚀 [LLM DEBUG] Base URL for internal calls:", baseUrl);
 
