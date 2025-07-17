@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "sonar-small-online", // Try simplified model name
+        model: "llama-3.1-sonar-small-128k-online", // Revert to original model name
         messages: [
           {
             role: "user",
