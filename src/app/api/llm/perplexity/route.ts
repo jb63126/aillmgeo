@@ -4,6 +4,19 @@ export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();
 
+    console.log(
+      "🔑 [PERPLEXITY DEBUG] API Key available:",
+      !!process.env.PERPLEXITY_API_KEY
+    );
+    console.log(
+      "🔑 [PERPLEXITY DEBUG] API Key length:",
+      process.env.PERPLEXITY_API_KEY?.length || 0
+    );
+    console.log(
+      "🔑 [PERPLEXITY DEBUG] API Key starts with:",
+      process.env.PERPLEXITY_API_KEY?.substring(0, 10) + "..."
+    );
+
     if (!question || !companyName) {
       return NextResponse.json(
         { error: "Question and company name are required" },
@@ -11,6 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.PERPLEXITY_API_KEY) {
+      console.error(
+        "🔑 [PERPLEXITY DEBUG] PERPLEXITY_API_KEY environment variable is missing!"
+      );
+      return NextResponse.json({
+        success: false,
+        error: "Perplexity API key not configured",
+        containsCompany: false,
+        llm: "Perplexity",
+        status: "Fail",
+      });
+    }
+
+    console.log("🔑 [PERPLEXITY DEBUG] About to call Perplexity API...");
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
       headers: {
@@ -31,10 +58,27 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status}`);
+      console.error(
+        "🔑 [PERPLEXITY DEBUG] Perplexity API HTTP error:",
+        response.status,
+        response.statusText
+      );
+      const errorText = await response.text();
+      console.error(
+        "🔑 [PERPLEXITY DEBUG] Perplexity API error response:",
+        errorText
+      );
+      throw new Error(
+        `Perplexity API error: ${response.status} - ${errorText}`
+      );
     }
 
     const data = await response.json();
+    console.log("🔑 [PERPLEXITY DEBUG] Perplexity API call successful");
+    console.log(
+      "🔑 [PERPLEXITY DEBUG] Perplexity API response keys:",
+      Object.keys(data)
+    );
     const llmResponse = data.choices?.[0]?.message?.content || "";
 
     // Check if company name appears in the response (case sensitive)
@@ -58,7 +102,12 @@ export async function POST(request: NextRequest) {
       llm: "Perplexity",
     });
   } catch (error) {
-    console.error("Perplexity API error:", error);
+    console.error("🔑 [PERPLEXITY DEBUG] Perplexity API error:", error);
+    console.error(
+      "🔑 [PERPLEXITY DEBUG] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error("🔑 [PERPLEXITY DEBUG] Error details:", error);
     return NextResponse.json({
       success: false,
       error: "Failed to query Perplexity",

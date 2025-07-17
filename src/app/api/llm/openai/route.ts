@@ -5,6 +5,19 @@ export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();
 
+    console.log(
+      "🔑 [OPENAI DEBUG] API Key available:",
+      !!process.env.OPENAI_API_KEY
+    );
+    console.log(
+      "🔑 [OPENAI DEBUG] API Key length:",
+      process.env.OPENAI_API_KEY?.length || 0
+    );
+    console.log(
+      "🔑 [OPENAI DEBUG] API Key starts with:",
+      process.env.OPENAI_API_KEY?.substring(0, 10) + "..."
+    );
+
     if (!question || !companyName) {
       return NextResponse.json(
         { error: "Question and company name are required" },
@@ -12,10 +25,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      console.error(
+        "🔑 [OPENAI DEBUG] OPENAI_API_KEY environment variable is missing!"
+      );
+      return NextResponse.json({
+        success: false,
+        error: "OpenAI API key not configured",
+        containsCompany: false,
+        llm: "ChatGPT",
+        status: "Fail",
+      });
+    }
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
+    console.log("🔑 [OPENAI DEBUG] About to call OpenAI API...");
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -27,6 +54,7 @@ export async function POST(request: NextRequest) {
       temperature: 0.7,
       max_tokens: 500,
     });
+    console.log("🔑 [OPENAI DEBUG] OpenAI API call successful");
 
     const llmResponse = response.choices[0]?.message?.content || "";
 
@@ -51,7 +79,12 @@ export async function POST(request: NextRequest) {
       llm: "ChatGPT",
     });
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("🔑 [OPENAI DEBUG] OpenAI API error:", error);
+    console.error(
+      "🔑 [OPENAI DEBUG] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error("🔑 [OPENAI DEBUG] Error details:", error);
     return NextResponse.json({
       success: false,
       error: "Failed to query OpenAI",

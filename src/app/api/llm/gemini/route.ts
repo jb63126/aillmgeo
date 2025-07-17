@@ -5,6 +5,19 @@ export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();
 
+    console.log(
+      "🔑 [GEMINI DEBUG] API Key available:",
+      !!process.env.GOOGLE_API_KEY
+    );
+    console.log(
+      "🔑 [GEMINI DEBUG] API Key length:",
+      process.env.GOOGLE_API_KEY?.length || 0
+    );
+    console.log(
+      "🔑 [GEMINI DEBUG] API Key starts with:",
+      process.env.GOOGLE_API_KEY?.substring(0, 10) + "..."
+    );
+
     if (!question || !companyName) {
       return NextResponse.json(
         { error: "Question and company name are required" },
@@ -12,11 +25,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.GOOGLE_API_KEY) {
+      console.error(
+        "🔑 [GEMINI DEBUG] GOOGLE_API_KEY environment variable is missing!"
+      );
+      return NextResponse.json({
+        success: false,
+        error: "Gemini API key not configured",
+        containsCompany: false,
+        llm: "Gemini",
+        status: "Fail",
+      });
+    }
+
+    console.log("🔑 [GEMINI DEBUG] About to call Gemini API...");
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const result = await model.generateContent(question);
     const response = await result.response;
+    console.log("🔑 [GEMINI DEBUG] Gemini API call successful");
     const llmResponse = response.text();
 
     // Check if company name appears in the response (case sensitive)
@@ -40,7 +68,12 @@ export async function POST(request: NextRequest) {
       llm: "Gemini",
     });
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("🔑 [GEMINI DEBUG] Gemini API error:", error);
+    console.error(
+      "🔑 [GEMINI DEBUG] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error("🔑 [GEMINI DEBUG] Error details:", error);
     return NextResponse.json({
       success: false,
       error: "Failed to query Gemini",

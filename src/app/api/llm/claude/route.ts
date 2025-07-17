@@ -4,6 +4,19 @@ export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();
 
+    console.log(
+      "🔑 [CLAUDE DEBUG] API Key available:",
+      !!process.env.ANTHROPIC_API_KEY
+    );
+    console.log(
+      "🔑 [CLAUDE DEBUG] API Key length:",
+      process.env.ANTHROPIC_API_KEY?.length || 0
+    );
+    console.log(
+      "🔑 [CLAUDE DEBUG] API Key starts with:",
+      process.env.ANTHROPIC_API_KEY?.substring(0, 10) + "..."
+    );
+
     if (!question || !companyName) {
       return NextResponse.json(
         { error: "Question and company name are required" },
@@ -11,6 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error(
+        "🔑 [CLAUDE DEBUG] ANTHROPIC_API_KEY environment variable is missing!"
+      );
+      return NextResponse.json({
+        success: false,
+        error: "Claude API key not configured",
+        containsCompany: false,
+        llm: "Claude",
+        status: "Fail",
+      });
+    }
+
+    console.log("🔑 [CLAUDE DEBUG] About to call Claude API...");
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -31,10 +58,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`);
+      console.error(
+        "🔑 [CLAUDE DEBUG] Claude API HTTP error:",
+        response.status,
+        response.statusText
+      );
+      const errorText = await response.text();
+      console.error("🔑 [CLAUDE DEBUG] Claude API error response:", errorText);
+      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("🔑 [CLAUDE DEBUG] Claude API call successful");
+    console.log(
+      "🔑 [CLAUDE DEBUG] Claude API response keys:",
+      Object.keys(data)
+    );
     const llmResponse = data.content?.[0]?.text || "";
 
     // Check if company name appears in the response (case sensitive)
@@ -58,7 +97,12 @@ export async function POST(request: NextRequest) {
       llm: "Claude",
     });
   } catch (error) {
-    console.error("Claude API error:", error);
+    console.error("🔑 [CLAUDE DEBUG] Claude API error:", error);
+    console.error(
+      "🔑 [CLAUDE DEBUG] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error("🔑 [CLAUDE DEBUG] Error details:", error);
     return NextResponse.json({
       success: false,
       error: "Failed to query Claude",
