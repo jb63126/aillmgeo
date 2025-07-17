@@ -23,11 +23,12 @@ export default function Login() {
   const [redirectUrl, setRedirectUrl] = useState("/en/dashboard");
 
   useEffect(() => {
-    // Get redirect URL from query params
+    // Get redirect URL from query params, default to dashboard if none provided
     const redirect = searchParams.get("redirect");
     if (redirect) {
       setRedirectUrl(redirect);
     }
+    // If no redirect param, stays as default "/en/dashboard"
   }, [searchParams]);
 
   const handleMagicLink = async (e: React.FormEvent) => {
