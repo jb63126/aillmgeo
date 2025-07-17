@@ -39,7 +39,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          emailRedirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 
@@ -65,7 +65,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          emailRedirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 

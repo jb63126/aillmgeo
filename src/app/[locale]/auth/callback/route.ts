@@ -18,5 +18,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Redirect to login page on error
-  return NextResponse.redirect(`${origin}/login`);
+  return NextResponse.redirect(`${origin}/en/login`);
 }
