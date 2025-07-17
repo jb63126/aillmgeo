@@ -209,6 +209,12 @@ export class WebScraper {
 
       while (retryCount < maxRetries) {
         try {
+          console.log(`=== SCRAPE ATTEMPT ${retryCount + 1}/${maxRetries} ===`);
+          console.log("URL:", url);
+          console.log("Timeout:", 15000);
+          console.log("Max content length:", 2000000);
+          console.log("========================================");
+
           response = await axios.get(url, {
             headers: {
               "User-Agent":
@@ -225,13 +231,56 @@ export class WebScraper {
             maxBodyLength: 2000000,
             validateStatus: (status) => status >= 200 && status < 400, // Accept redirects
           });
+
+          console.log("=== HTTP RESPONSE SUCCESS ===");
+          console.log("Status:", response.status);
+          console.log("Status text:", response.statusText);
+          console.log("Response size:", response.data?.length || 0);
+          console.log("Content-Type:", response.headers["content-type"]);
+          console.log("Response headers:", Object.keys(response.headers));
+          console.log(
+            "HTML preview:",
+            response.data?.substring(0, 500) + "..."
+          );
+          console.log(
+            "HTML contains <body>:",
+            response.data?.includes("<body>")
+          );
+          console.log(
+            "HTML contains <html>:",
+            response.data?.includes("<html>")
+          );
+          console.log(
+            "HTML contains <title>:",
+            response.data?.includes("<title>")
+          );
+          console.log("HTML contains <p>:", response.data?.includes("<p>"));
+          console.log("HTML contains <div>:", response.data?.includes("<div>"));
+          console.log("=============================");
           break;
         } catch (error) {
+          console.log(`=== SCRAPE ATTEMPT ${retryCount + 1} FAILED ===`);
+          console.log(
+            "Error:",
+            error instanceof Error ? error.message : String(error)
+          );
+          console.log("Error code:", (error as any)?.code);
+          console.log(
+            "Error response status:",
+            (error as any)?.response?.status
+          );
+          console.log(
+            "Error response data:",
+            (error as any)?.response?.data?.substring(0, 200)
+          );
+          console.log("========================================");
+
           retryCount++;
           if (retryCount >= maxRetries) {
             throw error;
           }
           // Wait before retry
+          console.log(`Waiting ${1000 * retryCount}ms before retry...`);
           await new Promise((resolve) =>
             setTimeout(resolve, 1000 * retryCount)
           );
@@ -244,8 +293,26 @@ export class WebScraper {
 
       const $ = cheerio.load(response.data);
 
+      console.log("=== CHEERIO LOADED HTML ===");
+      console.log("HTML size:", response.data.length);
+      console.log("Total elements:", $("*").length);
+      console.log("Body elements:", $("body *").length);
+      console.log(
+        "Text nodes:",
+        $("body")
+          .contents()
+          .filter(function () {
+            return this.nodeType === 3;
+          }).length
+      );
+      console.log("========================");
+
       // Extract content with better error handling
+      console.log("Starting main content extraction...");
       const content = this.extractMainContent($);
+      console.log(
+        `Main content extraction completed: ${content.length} characters`
+      );
 
       // If content is too short, try alternative extraction methods
       let finalContent = content;
@@ -254,20 +321,44 @@ export class WebScraper {
           `Short content detected (${content.length} chars), trying alternative extraction`
         );
         finalContent = this.extractAlternativeContent($);
+        console.log(
+          `Alternative extraction completed: ${finalContent.length} characters`
+        );
+      } else {
+        console.log(
+          "Main content extraction sufficient, skipping alternative extraction"
+        );
       }
+
+      console.log("=== EXTRACTING METADATA ===");
+      const title =
+        $("title").text().trim() || $("h1").first().text().trim() || "";
+      const description =
+        $('meta[name="description"]').attr("content") ||
+        $('meta[property="og:description"]').attr("content") ||
+        "";
+      const headings = this.extractHeadings($);
+      const links = this.extractLinks($, url);
+      const images = this.extractImages($, url);
+      const metadata = this.extractMetadata($);
+
+      console.log("Title:", title);
+      console.log("Description:", description);
+      console.log("Headings count:", headings.length);
+      console.log("Links count:", links.length);
+      console.log("Images count:", images.length);
+      console.log("Metadata keys:", Object.keys(metadata));
+      console.log("========================");
 
       const scrapedContent: ScrapedContent = {
         url,
-        title: $("title").text().trim() || $("h1").first().text().trim() || "",
-        description:
-          $('meta[name="description"]').attr("content") ||
-          $('meta[property="og:description"]').attr("content") ||
-          "",
+        title,
+        description,
         content: finalContent,
-        headings: this.extractHeadings($),
-        links: this.extractLinks($, url),
-        images: this.extractImages($, url),
-        metadata: this.extractMetadata($),
+        headings,
+        links,
+        images,
+        metadata,
       };
 
       console.log(
@@ -283,10 +374,28 @@ export class WebScraper {
   }
 
   private static extractMainContent($: cheerio.CheerioAPI): string {
+    console.log("=== EXTRACT MAIN CONTENT START ===");
+
+    // Count initial elements before removal
+    const initialScripts = $("script").length;
+    const initialStyles = $("style").length;
+    const initialNavs = $("nav").length;
+    const initialHeaders = $("header").length;
+    const initialAsides = $("aside").length;
+    console.log("Elements before removal:", {
+      initialScripts,
+      initialStyles,
+      initialNavs,
+      initialHeaders,
+      initialAsides,
+    });
+
     // Remove unwanted elements quickly
     $(
       "script, style, nav, header, aside, .advertisement, .ads, .cookie, .popup, .modal"
     ).remove();
+
+    console.log("Unwanted elements removed successfully");
 
     // Try to find main content area (optimized order)
     const contentSelectors = [
@@ -300,12 +409,20 @@ export class WebScraper {
     ];
 
     let mainContent = "";
+    console.log("Trying content selectors...");
     for (const selector of contentSelectors) {
       const element = $(selector);
+      console.log(`Selector '${selector}': found ${element.length} elements`);
       if (element.length > 0) {
         const text = element.text().trim();
+        console.log(
+          `Selector '${selector}': text length ${text.length} characters`
+        );
         if (text.length > 100) {
           mainContent = text;
+          console.log(
+            `Selected content from '${selector}': ${text.substring(0, 100)}...`
+          );
           break;
         }
       }
@@ -313,19 +430,37 @@ export class WebScraper {
 
     // If no main content found, fallback to body content
     if (!mainContent) {
-      mainContent = $("body").text().replace(/\s+/g, " ").trim();
+      console.log("No main content found, falling back to body content");
+      const bodyText = $("body").text().replace(/\s+/g, " ").trim();
+      console.log(`Body text length: ${bodyText.length} characters`);
+      console.log(`Body text preview: ${bodyText.substring(0, 200)}...`);
+      mainContent = bodyText;
     }
 
     // Extract footer content specifically for location information
+    console.log("Extracting footer content...");
     const footerContent = this.extractFooterContent($);
+    console.log(`Footer content length: ${footerContent.length} characters`);
 
     // Combine main content with footer content
     const combinedContent =
       mainContent +
       (footerContent ? "\n\nFOOTER INFORMATION:\n" + footerContent : "");
 
+    console.log(
+      `Combined content length before limit: ${combinedContent.length} characters`
+    );
+
     // Limit content length to 10000 characters
-    return combinedContent.substring(0, 10000).replace(/\s+/g, " ").trim();
+    const finalContent = combinedContent
+      .substring(0, 10000)
+      .replace(/\s+/g, " ")
+      .trim();
+    console.log(`Final content length: ${finalContent.length} characters`);
+    console.log(`Final content preview: ${finalContent.substring(0, 200)}...`);
+    console.log("=== EXTRACT MAIN CONTENT END ===");
+
+    return finalContent;
   }
 
   private static extractFooterContent($: cheerio.CheerioAPI): string {
@@ -352,36 +487,54 @@ export class WebScraper {
   }
 
   private static extractAlternativeContent($: cheerio.CheerioAPI): string {
+    console.log("=== EXTRACT ALTERNATIVE CONTENT START ===");
+
     // Remove unwanted elements
     $(
       "script, style, nav, header, aside, .advertisement, .ads, .cookie, .popup, .modal"
     ).remove();
 
+    console.log("Unwanted elements removed for alternative extraction");
+
     // Try multiple extraction strategies
     const strategies = [
       // Strategy 1: Try to find any content containers
       () => {
+        console.log(
+          "Trying Strategy 1: Content containers (div, section, article, p)"
+        );
         const containers = $("div, section, article, p").filter((_, el) => {
           const text = $(el).text().trim();
           return text.length > 50 && text.length < 2000;
         });
-        return containers
+        console.log(`Found ${containers.length} suitable containers`);
+        const content = containers
           .map((_, el) => $(el).text().trim())
           .get()
           .join(" ");
+        console.log(`Strategy 1 result: ${content.length} characters`);
+        return content;
       },
 
       // Strategy 2: Extract all paragraph text
       () => {
-        return $("p")
+        console.log("Trying Strategy 2: All paragraph text");
+        const paragraphs = $("p");
+        console.log(`Found ${paragraphs.length} paragraphs`);
+        const content = paragraphs
           .map((_, el) => $(el).text().trim())
           .get()
           .join(" ");
+        console.log(`Strategy 2 result: ${content.length} characters`);
+        return content;
       },
 
       // Strategy 3: Extract all text content from divs
       () => {
-        return $("div")
+        console.log("Trying Strategy 3: Text from divs");
+        const divs = $("div");
+        console.log(`Found ${divs.length} divs`);
+        const content = divs
           .map((_, el) => {
             const text = $(el).text().trim();
             return text.length > 10 && text.length < 500 ? text : "";
@@ -389,30 +542,59 @@ export class WebScraper {
           .get()
           .filter(Boolean)
           .join(" ");
+        console.log(`Strategy 3 result: ${content.length} characters`);
+        return content;
       },
 
       // Strategy 4: Last resort - get all body text
       () => {
-        return $("body").text().replace(/\s+/g, " ").trim();
+        console.log("Trying Strategy 4: All body text (last resort)");
+        const content = $("body").text().replace(/\s+/g, " ").trim();
+        console.log(`Strategy 4 result: ${content.length} characters`);
+        return content;
       },
     ];
 
-    for (const strategy of strategies) {
+    for (let i = 0; i < strategies.length; i++) {
       try {
-        const content = strategy();
+        console.log(`=== Executing Strategy ${i + 1} ===`);
+        const content = strategies[i]();
         if (content && content.length > 100) {
           console.log(
-            `Alternative extraction successful: ${content.length} characters`
+            `Alternative extraction successful with Strategy ${i + 1}: ${content.length} characters`
           );
-          return content.substring(0, 10000);
+          console.log(`Content preview: ${content.substring(0, 200)}...`);
+          const finalContent = content.substring(0, 10000);
+          console.log(
+            `Final alternative content length: ${finalContent.length} characters`
+          );
+          console.log("=== EXTRACT ALTERNATIVE CONTENT END ===");
+          return finalContent;
+        } else {
+          console.log(
+            `Strategy ${i + 1} failed: content too short (${content?.length || 0} chars)`
+          );
         }
       } catch (error) {
-        console.warn("Alternative extraction strategy failed:", error);
+        console.warn(`Alternative extraction strategy ${i + 1} failed:`, error);
       }
     }
 
     // If all strategies fail, return whatever we can get
-    return $("body").text().substring(0, 10000).replace(/\s+/g, " ").trim();
+    console.log("All strategies failed, returning body text as fallback");
+    const fallbackContent = $("body")
+      .text()
+      .substring(0, 10000)
+      .replace(/\s+/g, " ")
+      .trim();
+    console.log(
+      `Fallback content length: ${fallbackContent.length} characters`
+    );
+    console.log(
+      `Fallback content preview: ${fallbackContent.substring(0, 200)}...`
+    );
+    console.log("=== EXTRACT ALTERNATIVE CONTENT END ===");
+    return fallbackContent;
   }
 
   private static extractHeadings($: cheerio.CheerioAPI): string[] {

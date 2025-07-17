@@ -96,18 +96,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Scrape main URL only
-    console.log("Scraping website:", url);
+    console.log("=== ANALYZE API CALLED ===");
+    console.log("URL:", url);
+    console.log("Environment:", process.env.NODE_ENV);
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("========================");
+
+    console.log("Starting scrape for:", url);
     const scrapedContent = await WebScraper.scrapeWebsite(url);
+
+    console.log("=== SCRAPE COMPLETED ===");
+    console.log("Title:", scrapedContent.title);
+    console.log("Description:", scrapedContent.description);
+    console.log("Content length:", scrapedContent.content.length);
+    console.log(
+      "Content preview:",
+      scrapedContent.content.substring(0, 200) + "..."
+    );
+    console.log("=======================");
 
     // Check if content was truncated
     const contentLength = scrapedContent.content.length;
     const isContentTruncated = contentLength >= 10000;
 
     // Step 2: Create OpenAI summary
-    console.log("Creating OpenAI summary for business information...");
+    console.log("=== CREATING OPENAI SUMMARY ===");
+    console.log(
+      "Content length being sent to OpenAI:",
+      scrapedContent.content.length
+    );
+    console.log("OpenAI API Key available:", !!process.env.OPENAI_API_KEY);
+    console.log("===============================");
+
     const openAISummary = await createBusinessSummary(scrapedContent.content);
 
-    console.log("OpenAI Summary:", openAISummary);
+    console.log("=== OPENAI SUMMARY RESULT ===");
+    console.log("Company Name:", openAISummary.companyName);
+    console.log("Industry:", openAISummary.industry);
+    console.log("What They Do:", openAISummary.whatTheyDo);
+    console.log("Who They Serve:", openAISummary.whoTheyServe);
+    console.log("=============================");
 
     // Generate favicon URL
     const urlObj = new URL(url);
