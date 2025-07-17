@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     console.log("🔑 [GEMINI DEBUG] About to call Gemini API...");
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Updated to current model
 
     const result = await model.generateContent(question);
     const response = await result.response;
