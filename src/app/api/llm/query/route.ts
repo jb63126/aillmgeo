@@ -30,6 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the base URL for internal API calls
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXTAUTH_URL || "http://localhost:3000";
+
+    console.log("🚀 [LLM DEBUG] Base URL for internal calls:", baseUrl);
+
     // Create cache key based on URL
     const cacheKey = `llm-results-${url}`;
 
@@ -52,21 +59,30 @@ export async function POST(request: NextRequest) {
       // Query all LLMs in parallel for this question
       const llmPromises = LLM_ENDPOINTS.map(async (llm) => {
         try {
-          const response = await fetch(
-            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}${llm.endpoint}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                question,
-                companyName,
-              }),
-            }
+          console.log(
+            `🚀 [LLM DEBUG] Calling ${llm.name} at: ${baseUrl}${llm.endpoint}`
           );
 
+          const response = await fetch(`${baseUrl}${llm.endpoint}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              question,
+              companyName,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(
+              `🚀 [LLM DEBUG] ${llm.name} HTTP error: ${response.status} ${response.statusText}`
+            );
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
           const data = await response.json();
+          console.log(`🚀 [LLM DEBUG] ${llm.name} response:`, data);
 
           return {
             llm: llm.name,
@@ -75,7 +91,7 @@ export async function POST(request: NextRequest) {
             response: data.response || "",
           };
         } catch (error) {
-          console.error(`Error querying ${llm.name}:`, error);
+          console.error(`🚀 [LLM DEBUG] Error querying ${llm.name}:`, error);
           return {
             llm: llm.name,
             result: false,
