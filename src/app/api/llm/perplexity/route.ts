@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Test endpoint to verify function accessibility and environment variables
+export async function GET() {
+  return NextResponse.json({
+    endpoint: "Perplexity",
+    accessible: true,
+    environment: process.env.NODE_ENV,
+    apiKeyAvailable: !!process.env.PERPLEXITY_API_KEY,
+    apiKeyLength: process.env.PERPLEXITY_API_KEY?.length || 0,
+    apiKeyPrefix: process.env.PERPLEXITY_API_KEY?.substring(0, 10) || "none",
+    allEnvVars: Object.keys(process.env).filter((key) =>
+      key.includes("API_KEY")
+    ),
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();

@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
+// Test endpoint to verify function accessibility and environment variables
+export async function GET() {
+  return NextResponse.json({
+    endpoint: "OpenAI/ChatGPT",
+    accessible: true,
+    environment: process.env.NODE_ENV,
+    apiKeyAvailable: !!process.env.OPENAI_API_KEY,
+    apiKeyLength: process.env.OPENAI_API_KEY?.length || 0,
+    apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10) || "none",
+    allEnvVars: Object.keys(process.env).filter((key) =>
+      key.includes("API_KEY")
+    ),
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { question, companyName } = await request.json();
