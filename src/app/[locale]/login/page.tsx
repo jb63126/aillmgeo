@@ -40,7 +40,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent("/en/dashboard")}`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 
@@ -66,7 +66,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent("/en/dashboard")}`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 
@@ -89,7 +89,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent("/en/dashboard")}`,
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -116,7 +116,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent("/en/dashboard")}`,
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 

@@ -318,9 +318,9 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - moved up closer to URL input */}
         {showProgressBar && (
-          <div className="w-full max-w-4xl px-4 sm:px-0">
+          <div className="-mt-6 w-full max-w-4xl px-4 sm:px-0">
             <ProgressBar steps={progressSteps} />
           </div>
         )}

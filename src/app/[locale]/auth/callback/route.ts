@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       // Redirect to specified URL or default dashboard
-      const redirectUrl = redirect || "/en/dashboard";
+      const redirectUrl = redirect
+        ? decodeURIComponent(redirect)
+        : "/en/dashboard";
       return NextResponse.redirect(`${origin}${redirectUrl}`);
     }
   }
