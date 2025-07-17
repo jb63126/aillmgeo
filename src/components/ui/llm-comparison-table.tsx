@@ -75,7 +75,8 @@ const LLMComparisonTable = ({
         ...(domain && { domain }),
       });
 
-      window.location.href = `/dashboard?${params.toString()}`;
+      // Redirect to login page first
+      window.location.href = `/en/login?redirect=${encodeURIComponent(`/en/dashboard?${params.toString()}`)}`;
     }
   };
 

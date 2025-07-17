@@ -3,13 +3,7 @@
  */
 const nextConfig = {
   redirects: async () => {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/dashboard/projects",
-        permanent: false,
-      },
-    ];
+    return [];
   },
   trailingSlash: true,
   eslint: {
