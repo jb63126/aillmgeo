@@ -7,6 +7,7 @@ import { Input } from "~/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import LLMComparisonTable from "~/components/ui/llm-comparison-table";
+import ProgressBar, { ProgressStep } from "~/components/ui/progress-bar";
 import { websiteAnalysisQueries } from "~/data/llm-comparison-data";
 
 export default function Hero() {
@@ -16,27 +17,22 @@ export default function Hero() {
   const [error, setError] = useState("");
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [showLLMSection, setShowLLMSection] = useState(false);
-  const businessAnalysisRef = useRef<HTMLDivElement>(null);
+  const [showProgressBar, setShowProgressBar] = useState(false);
+  const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
+  const [businessAnalysis, setBusinessAnalysis] = useState<any>(null);
+  const llmTableRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to business analysis when result appears, then show LLM section after scroll
+  // Scroll to LLM table when analysis is complete
   useEffect(() => {
-    if (result && businessAnalysisRef.current) {
-      // Reset LLM section visibility
-      setShowLLMSection(false);
-
+    if (result && showLLMSection && llmTableRef.current) {
       setTimeout(() => {
-        businessAnalysisRef.current?.scrollIntoView({
+        llmTableRef.current?.scrollIntoView({
           behavior: "smooth",
           block: "start",
         });
-
-        // Show LLM section 3 seconds after scroll completes
-        setTimeout(() => {
-          setShowLLMSection(true);
-        }, 3000);
       }, 100);
     }
-  }, [result]);
+  }, [result, showLLMSection]);
 
   const normalizeUrl = (inputUrl: string) => {
     let normalizedUrl = inputUrl.trim();
@@ -60,10 +56,27 @@ export default function Hero() {
 
     setIsAnalyzing(true);
     setError("");
+    setShowProgressBar(true);
+    setShowLLMSection(false);
+    setResult(null);
+
+    // Initialize progress steps
+    const steps: ProgressStep[] = [
+      {
+        id: "gathering",
+        label: "Gathering business details",
+        status: "loading",
+      },
+      { id: "analyzing", label: "Analyzing business", status: "pending" },
+      { id: "contacting", label: "Contacting LLMs", status: "pending" },
+      { id: "compiling", label: "Compiling results", status: "pending" },
+    ];
+    setProgressSteps(steps);
 
     try {
       const normalizedUrl = normalizeUrl(url);
 
+      // Step 1: Gathering business details
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
@@ -79,36 +92,101 @@ export default function Hero() {
 
       const data = await response.json();
 
-      // Log the extracted data to console
-      console.log("=== SCRAPED DATA ===");
-      console.log("Raw Content Length:", data.rawContent?.length || 0);
-      console.log("Business Summary:", data.businessSummary);
-      console.log("What They Do:", data.businessSummary?.whatTheyDo);
-      console.log("Who They Serve:", data.businessSummary?.whoTheyServe);
-      console.log("Industry:", data.businessSummary?.industry);
-      console.log("Location:", data.businessSummary?.location);
-      console.log("===================");
+      // Step 1 Complete - Update progress
+      setProgressSteps((prev) =>
+        prev.map((step) =>
+          step.id === "gathering"
+            ? { ...step, status: "completed" }
+            : step.id === "analyzing"
+              ? { ...step, status: "loading" }
+              : step
+        )
+      );
 
-      // Add the normalized URL to the result for caching
-      setResult({
-        ...data,
-        url: normalizedUrl,
-      });
+      // Store business analysis data (hidden from UI)
+      setBusinessAnalysis(data.businessSummary);
 
-      // Automatically generate questions after business analysis completes
+      // Step 2: Analyzing business (brief pause for UX)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setProgressSteps((prev) =>
+        prev.map((step) =>
+          step.id === "analyzing"
+            ? { ...step, status: "completed" }
+            : step.id === "contacting"
+              ? { ...step, status: "loading" }
+              : step
+        )
+      );
+
+      // Step 3: Contacting LLMs
       if (data.businessSummary) {
-        generateQuestions(data.businessSummary, normalizedUrl);
+        const questions = await generateQuestions(
+          data.businessSummary,
+          normalizedUrl
+        );
+        const llmResults = await queryLLMs(
+          questions,
+          data.businessSummary.companyName || "Company",
+          normalizedUrl
+        );
+
+        setProgressSteps((prev) =>
+          prev.map((step) =>
+            step.id === "contacting"
+              ? { ...step, status: "completed" }
+              : step.id === "compiling"
+                ? { ...step, status: "loading" }
+                : step
+          )
+        );
+
+        // Step 4: Compiling results
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        setProgressSteps((prev) =>
+          prev.map((step) =>
+            step.id === "compiling" ? { ...step, status: "completed" } : step
+          )
+        );
+
+        // Set final result with LLM data
+        setResult({
+          ...data,
+          url: normalizedUrl,
+          llmResults,
+        });
+
+        // Hide progress bar and show LLM section
+        setTimeout(() => {
+          setShowProgressBar(false);
+          setShowLLMSection(true);
+        }, 1000);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(errorMessage);
+
+      // Update progress steps to show error
+      setProgressSteps((prev) =>
+        prev.map((step) =>
+          step.status === "loading"
+            ? { ...step, status: "error", error: errorMessage }
+            : step
+        )
       );
+
+      setShowProgressBar(false);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const generateQuestions = async (businessSummary: any, url: string) => {
+  const generateQuestions = async (
+    businessSummary: any,
+    url: string
+  ): Promise<string[]> => {
     setIsGeneratingQuestions(true);
 
     try {
@@ -126,52 +204,11 @@ export default function Hero() {
 
       const data = await response.json();
 
-      // Update result state with generated questions
-      setResult((prev: any) => ({
-        ...prev,
-        generatedQuestions: data.questions,
-      }));
-
-      // Query LLMs with the generated questions only if business analysis was successful
-      const hasValidBusinessData =
-        businessSummary.companyName &&
-        businessSummary.companyName !== "Not found" &&
-        businessSummary.industry &&
-        businessSummary.industry !== "Not found";
-
-      if (data.questions && hasValidBusinessData && url) {
-        console.log("=== TRIGGERING LLM QUERIES ===");
-        console.log("Questions generated:", data.questions);
-        console.log("Company name:", businessSummary.companyName);
-        console.log("URL:", url);
-        console.log("=============================");
-
-        const llmResults = await queryLLMs(
-          data.questions,
-          businessSummary.companyName,
-          url
-        );
-
-        console.log("=== LLM RESULTS RECEIVED ===");
-        console.log("Results:", llmResults);
-        console.log("===========================");
-
-        // Update result with real LLM data
-        setResult((prev: any) => ({
-          ...prev,
-          llmResults: llmResults,
-        }));
-      } else {
-        console.log("=== LLM QUERY SKIPPED ===");
-        console.log("Has questions:", !!data.questions);
-        console.log("Has valid business data:", hasValidBusinessData);
-        console.log("Company name:", businessSummary.companyName);
-        console.log("Industry:", businessSummary.industry);
-        console.log("Has URL:", !!url);
-        console.log("========================");
-      }
+      // Return the generated questions
+      return data.questions || [];
     } catch (err) {
       console.error("Error generating questions:", err);
+      return [];
     } finally {
       setIsGeneratingQuestions(false);
     }
@@ -281,11 +318,29 @@ export default function Hero() {
           </div>
         </div>
 
-        {result && (
+        {/* Progress Bar */}
+        {showProgressBar && (
+          <div className="w-full max-w-4xl px-4 sm:px-0">
+            <ProgressBar steps={progressSteps} />
+          </div>
+        )}
+
+        {/* LLM Results Table */}
+        {showLLMSection && result && (
           <div
-            ref={businessAnalysisRef}
+            ref={llmTableRef}
             className="w-full max-w-4xl space-y-6 px-4 sm:px-0"
           >
+            <LLMComparisonTable
+              data={result.llmResults || []}
+              domain={new URL(result.url).hostname}
+            />
+          </div>
+        )}
+
+        {/* Remove business analysis card - keeping this comment for reference */}
+        {false && result && (
+          <div className="w-full max-w-4xl space-y-6 px-4 sm:px-0">
             <Card
               className="animate__animated animate__slideInUp mx-auto w-full max-w-6xl"
               style={{ animationDuration: "4s" }}
@@ -381,49 +436,6 @@ export default function Hero() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
-
-        {/* LLM Comparison Table Section */}
-        {result && showLLMSection && (
-          <div
-            className="animate__animated animate__slideInUp w-full max-w-6xl space-y-6 px-4 sm:px-0"
-            style={{ animationDuration: "4s" }}
-          >
-            <div className="space-y-4 pt-8 text-center sm:pt-16">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                LLM Performance Analysis
-              </h2>
-              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-                See how different AI models perform on website analysis tasks.
-                This comparison helps you understand which AI provides the most
-                reliable results.
-              </p>
-            </div>
-
-            {isGeneratingQuestions ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span className="text-lg">
-                    Generating search questions...
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <LLMComparisonTable
-                data={
-                  result.llmResults
-                    ? result.llmResults
-                    : result.generatedQuestions
-                      ? createDynamicTableData(result.generatedQuestions)
-                      : websiteAnalysisQueries
-                }
-                title="Website Analysis Performance"
-                className="mt-8"
-                domain={result.businessSummary?.websiteUrl || url}
-              />
-            )}
           </div>
         )}
       </div>
