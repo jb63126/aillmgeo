@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
             content: question,
           },
         ],
-        max_tokens: 500,
+        max_tokens: 1000, // Increased from 500 to avoid API restrictions
         temperature: 0.7,
       }),
     });

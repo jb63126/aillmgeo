@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      // Removed max_tokens to match working business analysis call
     });
     console.log("🔑 [OPENAI DEBUG] OpenAI API call successful");
 

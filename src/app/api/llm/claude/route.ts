@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-3-haiku-20240307",
-        max_tokens: 500,
+        max_tokens: 1000, // Increased from 500 to avoid API restrictions
         messages: [
           {
             role: "user",
