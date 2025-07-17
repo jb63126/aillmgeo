@@ -20,6 +20,7 @@ export default function ProgressBar({
   className = "",
 }: ProgressBarProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [animatingSteps, setAnimatingSteps] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const completedSteps = steps.filter(
@@ -35,6 +36,23 @@ export default function ProgressBar({
       setCurrentStep(completedSteps);
     }
   }, [steps]);
+
+  // Track when steps change status to trigger animation
+  useEffect(() => {
+    steps.forEach((step, index) => {
+      if (step.status === "loading" && !animatingSteps.has(step.id)) {
+        setAnimatingSteps((prev) => new Set(prev).add(step.id));
+        // Remove animation after completion
+        setTimeout(() => {
+          setAnimatingSteps((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(step.id);
+            return newSet;
+          });
+        }, 800);
+      }
+    });
+  }, [steps, animatingSteps]);
 
   const getStepIcon = (step: ProgressStep, index: number) => {
     switch (step.status) {
@@ -71,6 +89,72 @@ export default function ProgressBar({
     return (completedSteps / steps.length) * 100;
   };
 
+  const SlotMachineText = ({
+    text,
+    isAnimating,
+  }: {
+    text: string;
+    isAnimating: boolean;
+  }) => {
+    const [displayText, setDisplayText] = useState(text);
+    const [animationPhase, setAnimationPhase] = useState<
+      "idle" | "rolling" | "settling"
+    >("idle");
+
+    useEffect(() => {
+      if (isAnimating) {
+        setAnimationPhase("rolling");
+
+        // Random text rolling phase
+        const rollingInterval = setInterval(() => {
+          const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+          const randomText = text
+            .split("")
+            .map(
+              () => randomChars[Math.floor(Math.random() * randomChars.length)]
+            )
+            .join("");
+          setDisplayText(randomText);
+        }, 50);
+
+        // Stop rolling and settle to final text
+        setTimeout(() => {
+          clearInterval(rollingInterval);
+          setAnimationPhase("settling");
+          setDisplayText(text);
+
+          setTimeout(() => {
+            setAnimationPhase("idle");
+          }, 200);
+        }, 600);
+
+        return () => clearInterval(rollingInterval);
+      }
+    }, [isAnimating, text]);
+
+    return (
+      <div className="relative h-6 overflow-hidden">
+        <div
+          className={`transition-all duration-200 ${
+            animationPhase === "rolling"
+              ? "animate-pulse opacity-80"
+              : animationPhase === "settling"
+                ? "animate-bounce opacity-100"
+                : "opacity-100"
+          }`}
+          style={{
+            transform:
+              animationPhase === "rolling" || animationPhase === "settling"
+                ? "translateY(0)"
+                : "translateY(0)",
+          }}
+        >
+          {displayText}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`mx-auto w-full max-w-3xl ${className}`}>
       {/* Progress Bar */}
@@ -95,7 +179,10 @@ export default function ProgressBar({
             {getStepIcon(step, index)}
             <div className="flex-1">
               <div className={`font-medium ${getStepTextColor(step)}`}>
-                {step.label}
+                <SlotMachineText
+                  text={step.label}
+                  isAnimating={animatingSteps.has(step.id)}
+                />
               </div>
               {step.status === "error" && step.error && (
                 <div className="mt-1 text-sm text-red-600 dark:text-red-400">
