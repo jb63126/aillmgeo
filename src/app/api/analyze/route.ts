@@ -78,17 +78,27 @@ Be thorough - look for subtle indicators and context clues throughout the conten
 }
 
 export async function POST(request: NextRequest) {
+  console.log("🚀 [PROD DEBUG] API ROUTE STARTED");
+  console.log("🚀 [PROD DEBUG] Function entered at:", new Date().toISOString());
+
   try {
+    console.log("🚀 [PROD DEBUG] Parsing request body...");
     const { url } = await request.json();
+    console.log("🚀 [PROD DEBUG] Request body parsed successfully");
+    console.log("🚀 [PROD DEBUG] URL received:", url);
 
     if (!url) {
+      console.log("🚀 [PROD DEBUG] No URL provided, returning 400");
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
     // Validate URL
+    console.log("🚀 [PROD DEBUG] Validating URL format...");
     try {
       new URL(url);
+      console.log("🚀 [PROD DEBUG] URL validation passed");
     } catch {
+      console.log("🚀 [PROD DEBUG] URL validation failed, returning 400");
       return NextResponse.json(
         { error: "Invalid URL format" },
         { status: 400 }
@@ -96,15 +106,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Scrape main URL only
+    console.log("🚀 [PROD DEBUG] About to start scraping...");
     console.log("=== ANALYZE API CALLED ===");
     console.log("URL:", url);
     console.log("Environment:", process.env.NODE_ENV);
     console.log("Timestamp:", new Date().toISOString());
     console.log("========================");
 
+    console.log("🚀 [PROD DEBUG] Calling WebScraper.scrapeWebsite...");
     console.log("Starting scrape for:", url);
-    const scrapedContent = await WebScraper.scrapeWebsite(url);
 
+    let scrapedContent;
+    try {
+      scrapedContent = await WebScraper.scrapeWebsite(url);
+      console.log(
+        "🚀 [PROD DEBUG] WebScraper.scrapeWebsite completed successfully"
+      );
+    } catch (scrapeError) {
+      console.log("🚀 [PROD DEBUG] WebScraper.scrapeWebsite FAILED:");
+      console.error("🚀 [PROD DEBUG] Scrape error:", scrapeError);
+      console.error(
+        "🚀 [PROD DEBUG] Scrape error message:",
+        scrapeError instanceof Error ? scrapeError.message : String(scrapeError)
+      );
+      console.error(
+        "🚀 [PROD DEBUG] Scrape error stack:",
+        scrapeError instanceof Error ? scrapeError.stack : "No stack trace"
+      );
+      throw scrapeError;
+    }
+
+    console.log("🚀 [PROD DEBUG] Scraping completed, processing results...");
     console.log("=== SCRAPE COMPLETED ===");
     console.log("Title:", scrapedContent.title);
     console.log("Description:", scrapedContent.description);
@@ -120,6 +152,7 @@ export async function POST(request: NextRequest) {
     const isContentTruncated = contentLength >= 10000;
 
     // Step 2: Create OpenAI summary
+    console.log("🚀 [PROD DEBUG] About to create OpenAI summary...");
     console.log("=== CREATING OPENAI SUMMARY ===");
     console.log(
       "Content length being sent to OpenAI:",
@@ -128,7 +161,35 @@ export async function POST(request: NextRequest) {
     console.log("OpenAI API Key available:", !!process.env.OPENAI_API_KEY);
     console.log("===============================");
 
-    const openAISummary = await createBusinessSummary(scrapedContent.content);
+    let openAISummary;
+    try {
+      openAISummary = await createBusinessSummary(scrapedContent.content);
+      console.log("🚀 [PROD DEBUG] OpenAI summary created successfully");
+    } catch (openaiError) {
+      console.log("🚀 [PROD DEBUG] OpenAI summary creation FAILED:");
+      console.error("🚀 [PROD DEBUG] OpenAI error:", openaiError);
+      console.error(
+        "🚀 [PROD DEBUG] OpenAI error message:",
+        openaiError instanceof Error ? openaiError.message : String(openaiError)
+      );
+      // Don't throw, let it use the fallback values
+      openAISummary = {
+        companyName: "Not found",
+        whatTheyDo: "Not found",
+        whoTheyServe: "Not found",
+        cityAndCountry: "Not found",
+        servicesOffered: "Not found",
+        pricing: "Not found",
+        businessType: "Not found",
+        industry: "Not found",
+        businessModel: "Not found",
+        companySize: "Not found",
+        keyDifferentiators: "Not found",
+        serviceArea: "Not found",
+        foundedYear: "Not found",
+        socialProof: "Not found",
+      };
+    }
 
     console.log("=== OPENAI SUMMARY RESULT ===");
     console.log("Company Name:", openAISummary.companyName);
@@ -138,11 +199,13 @@ export async function POST(request: NextRequest) {
     console.log("=============================");
 
     // Generate favicon URL
+    console.log("🚀 [PROD DEBUG] Generating favicon URL...");
     const urlObj = new URL(url);
     const faviconUrl = `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
 
     // Return results
-    return NextResponse.json({
+    console.log("🚀 [PROD DEBUG] Preparing final response...");
+    const response = {
       success: true,
       url,
       faviconUrl,
@@ -158,9 +221,26 @@ export async function POST(request: NextRequest) {
       contentAnalysisFlag: isContentTruncated
         ? "entire website not analyzed"
         : "complete analysis",
-    });
+    };
+
+    console.log("🚀 [PROD DEBUG] Final response prepared, returning...");
+    console.log(
+      "🚀 [PROD DEBUG] Response size:",
+      JSON.stringify(response).length
+    );
+    return NextResponse.json(response);
   } catch (error) {
-    console.error("Analysis error:", error);
+    console.log("🚀 [PROD DEBUG] MAIN CATCH BLOCK REACHED:");
+    console.error("🚀 [PROD DEBUG] Analysis error:", error);
+    console.error(
+      "🚀 [PROD DEBUG] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error(
+      "🚀 [PROD DEBUG] Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
+
     return NextResponse.json(
       {
         error: "Failed to analyze website",
