@@ -6,7 +6,9 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const redirect = requestUrl.searchParams.get("redirect");
-  const origin = requestUrl.origin;
+
+  // Use the correct origin - prioritize production domain if available
+  const origin = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
 
   // Comprehensive debugging
   console.log("🔍 [AUTH CALLBACK] Starting auth callback process");
@@ -60,6 +62,8 @@ export async function GET(request: NextRequest) {
         "🔍 [AUTH CALLBACK] User:",
         data?.user ? `User ID: ${data.user.id}` : "No user"
       );
+      console.log("🔍 [AUTH CALLBACK] Cookies being set for domain:", origin);
+      console.log("🔍 [AUTH CALLBACK] Request host:", requestUrl.host);
 
       // Redirect to specified URL or default dashboard
       const redirectUrl = redirect

@@ -37,8 +37,11 @@ export default function Login() {
     setError("");
 
     try {
-      const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
+      // Use production domain if available, fallback to current origin
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const fullRedirectUrl = `${baseUrl}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
       console.log("🔍 [DEBUG] Magic link redirect URL:", fullRedirectUrl);
+      console.log("🔍 [DEBUG] Base URL used:", baseUrl);
       console.log("🔍 [DEBUG] redirectUrl state:", redirectUrl);
       console.log("🔍 [DEBUG] searchParams:", searchParams.toString());
 
@@ -68,11 +71,14 @@ export default function Login() {
     setError("");
 
     try {
-      const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
+      // Use production domain if available, fallback to current origin
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const fullRedirectUrl = `${baseUrl}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
       console.log(
         "🔍 [DEBUG] Resend magic link redirect URL:",
         fullRedirectUrl
       );
+      console.log("🔍 [DEBUG] Resend base URL used:", baseUrl);
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -100,7 +106,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -127,7 +133,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 
