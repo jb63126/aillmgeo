@@ -37,10 +37,15 @@ export default function Login() {
     setError("");
 
     try {
+      const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
+      console.log("🔍 Magic link redirect URL:", fullRedirectUrl);
+      console.log("🔍 redirectUrl state:", redirectUrl);
+      console.log("🔍 searchParams:", searchParams.toString());
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          emailRedirectTo: fullRedirectUrl,
         },
       });
 
@@ -63,10 +68,13 @@ export default function Login() {
     setError("");
 
     try {
+      const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
+      console.log("🔍 Resend magic link redirect URL:", fullRedirectUrl);
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          emailRedirectTo: fullRedirectUrl,
         },
       });
 
@@ -89,7 +97,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -116,7 +124,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
+          redirectTo: `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       });
 
