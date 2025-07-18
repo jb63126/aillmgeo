@@ -37,18 +37,28 @@ export default function Login() {
     setError("");
 
     try {
-      // Use production domain if available, fallback to current origin
+      // Store redirect information for hash-based auth flow
+      sessionStorage.setItem(
+        "flowql_auth_redirect",
+        JSON.stringify({
+          redirect: redirectUrl,
+          timestamp: Date.now(),
+        })
+      );
+
+      // Use production domain for magic link - Supabase will redirect to Site URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const fullRedirectUrl = `${baseUrl}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
-      console.log("🔍 [DEBUG] Magic link redirect URL:", fullRedirectUrl);
-      console.log("🔍 [DEBUG] Base URL used:", baseUrl);
-      console.log("🔍 [DEBUG] redirectUrl state:", redirectUrl);
-      console.log("🔍 [DEBUG] searchParams:", searchParams.toString());
+
+      console.log("🔍 [DEBUG] Magic link configuration:", {
+        baseUrl,
+        redirectUrl,
+        storedRedirect: sessionStorage.getItem("flowql_auth_redirect"),
+      });
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: fullRedirectUrl,
+          // Don't specify emailRedirectTo - let Supabase use Site URL
         },
       });
 
@@ -71,19 +81,24 @@ export default function Login() {
     setError("");
 
     try {
-      // Use production domain if available, fallback to current origin
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const fullRedirectUrl = `${baseUrl}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
-      console.log(
-        "🔍 [DEBUG] Resend magic link redirect URL:",
-        fullRedirectUrl
+      // Update stored redirect information for hash-based auth flow
+      sessionStorage.setItem(
+        "flowql_auth_redirect",
+        JSON.stringify({
+          redirect: redirectUrl,
+          timestamp: Date.now(),
+        })
       );
-      console.log("🔍 [DEBUG] Resend base URL used:", baseUrl);
+
+      console.log("🔍 [DEBUG] Resend magic link configuration:", {
+        redirectUrl,
+        storedRedirect: sessionStorage.getItem("flowql_auth_redirect"),
+      });
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: fullRedirectUrl,
+          // Don't specify emailRedirectTo - let Supabase use Site URL
         },
       });
 
@@ -103,10 +118,18 @@ export default function Login() {
     setError("");
 
     try {
+      // Store redirect information for OAuth flow
+      sessionStorage.setItem(
+        "flowql_auth_redirect",
+        JSON.stringify({
+          redirect: redirectUrl,
+          timestamp: Date.now(),
+        })
+      );
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
@@ -130,11 +153,18 @@ export default function Login() {
     setError("");
 
     try {
+      // Store redirect information for OAuth flow
+      sessionStorage.setItem(
+        "flowql_auth_redirect",
+        JSON.stringify({
+          redirect: redirectUrl,
+          timestamp: Date.now(),
+        })
+      );
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
-        },
+        options: {},
       });
 
       if (error) {

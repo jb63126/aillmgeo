@@ -9,6 +9,8 @@ import { Badge } from "~/components/ui/badge";
 import LLMComparisonTable from "~/components/ui/llm-comparison-table";
 import ProgressBar, { ProgressStep } from "~/components/ui/progress-bar";
 import { websiteAnalysisQueries } from "~/data/llm-comparison-data";
+import { supabase } from "~/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
   const [url, setUrl] = useState("");
@@ -21,6 +23,74 @@ export default function Hero() {
   const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
   const [businessAnalysis, setBusinessAnalysis] = useState<any>(null);
   const llmTableRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Handle hash-based authentication tokens from magic link
+  useEffect(() => {
+    const handleHashAuth = async () => {
+      if (typeof window === "undefined") return;
+
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      const tokenType = hashParams.get("token_type");
+      const type = hashParams.get("type");
+
+      console.log("🔍 [HERO] Hash auth detection:", {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        tokenType,
+        type,
+        fullHash: window.location.hash,
+      });
+
+      if (accessToken && refreshToken && type === "magiclink") {
+        console.log("🔍 [HERO] Magic link tokens found, establishing session");
+
+        try {
+          // Set the session using the tokens from the hash
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          console.log("🔍 [HERO] Session establishment result:", {
+            hasSession: !!data.session,
+            hasUser: !!data.user,
+            error: error?.message,
+          });
+
+          if (!error && data.session) {
+            // Clear the hash from URL
+            window.history.replaceState(null, "", window.location.pathname);
+
+            // Check if there was a redirect parameter in session storage
+            const redirectInfo = sessionStorage.getItem("flowql_auth_redirect");
+            let redirectPath = "/en/dashboard";
+
+            if (redirectInfo) {
+              try {
+                const parsed = JSON.parse(redirectInfo);
+                redirectPath = parsed.redirect || "/en/dashboard";
+                sessionStorage.removeItem("flowql_auth_redirect");
+              } catch (e) {
+                console.log("🔍 [HERO] Could not parse redirect info");
+              }
+            }
+
+            console.log("🔍 [HERO] Redirecting to:", redirectPath);
+            router.push(redirectPath);
+          } else {
+            console.error("🔍 [HERO] Failed to establish session:", error);
+          }
+        } catch (err) {
+          console.error("🔍 [HERO] Error setting session:", err);
+        }
+      }
+    };
+
+    handleHashAuth();
+  }, [router]);
 
   // Scroll to LLM table when analysis is complete
   useEffect(() => {
