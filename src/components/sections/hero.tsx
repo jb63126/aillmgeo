@@ -73,12 +73,37 @@ export default function Hero() {
                 const parsed = JSON.parse(redirectInfo);
                 redirectPath = parsed.redirect || "/en/dashboard";
                 sessionStorage.removeItem("flowql_auth_redirect");
+
+                console.log("🔍 [HERO] Restored redirect path:", redirectPath);
+
+                // Check if the redirect path contains search parameters
+                if (redirectPath.includes("?search=")) {
+                  const url = new URL(redirectPath, window.location.origin);
+                  const searchId = url.searchParams.get("search");
+                  const domain = url.searchParams.get("domain");
+
+                  console.log("🔍 [HERO] Search parameters found:", {
+                    searchId,
+                    domain,
+                  });
+
+                  // Verify search data exists in sessionStorage
+                  if (searchId) {
+                    const savedData = sessionStorage.getItem(
+                      `flowql_search_${searchId}`
+                    );
+                    console.log(
+                      "🔍 [HERO] Search data in sessionStorage:",
+                      savedData ? "Found" : "Not found"
+                    );
+                  }
+                }
               } catch (e) {
                 console.log("🔍 [HERO] Could not parse redirect info");
               }
             }
 
-            console.log("🔍 [HERO] Redirecting to:", redirectPath);
+            console.log("🔍 [HERO] Final redirect path:", redirectPath);
             router.push(redirectPath);
           } else {
             console.error("🔍 [HERO] Failed to establish session:", error);

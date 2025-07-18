@@ -79,13 +79,24 @@ export default function Dashboard() {
       searchId,
       domain,
       allParams: Object.fromEntries(searchParams.entries()),
+      currentUrl: typeof window !== "undefined" ? window.location.href : "SSR",
     });
 
     if (searchId && typeof window !== "undefined") {
       const savedData = sessionStorage.getItem(`flowql_search_${searchId}`);
+      console.log("🔍 [DASHBOARD PAGE] Session storage lookup:", {
+        searchId,
+        key: `flowql_search_${searchId}`,
+        hasData: !!savedData,
+        dataLength: savedData?.length || 0,
+      });
+
+      // List all sessionStorage keys for debugging
+      const allKeys = Object.keys(sessionStorage);
+      const searchKeys = allKeys.filter((key) => key.includes("flowql_search"));
       console.log(
-        "🔍 [DASHBOARD PAGE] Session storage data:",
-        savedData ? "Found" : "Not found"
+        "🔍 [DASHBOARD PAGE] All search keys in sessionStorage:",
+        searchKeys
       );
 
       if (savedData) {
@@ -96,6 +107,7 @@ export default function Dashboard() {
             domain: parsedData.domain,
             timestamp: parsedData.timestamp,
             resultCount: parsedData.data?.length || 0,
+            sampleQuery: parsedData.data?.[0]?.query || "No queries",
           });
           setSearchData(parsedData);
         } catch (error) {
@@ -104,6 +116,11 @@ export default function Dashboard() {
             error
           );
         }
+      } else {
+        console.log(
+          "🔍 [DASHBOARD PAGE] No data found for search ID:",
+          searchId
+        );
       }
     } else {
       console.log("🔍 [DASHBOARD PAGE] No search ID found or not in browser");
