@@ -38,9 +38,9 @@ export default function Login() {
 
     try {
       const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
-      console.log("🔍 Magic link redirect URL:", fullRedirectUrl);
-      console.log("🔍 redirectUrl state:", redirectUrl);
-      console.log("🔍 searchParams:", searchParams.toString());
+      console.log("🔍 [DEBUG] Magic link redirect URL:", fullRedirectUrl);
+      console.log("🔍 [DEBUG] redirectUrl state:", redirectUrl);
+      console.log("🔍 [DEBUG] searchParams:", searchParams.toString());
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -69,7 +69,10 @@ export default function Login() {
 
     try {
       const fullRedirectUrl = `${window.location.origin}/en/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`;
-      console.log("🔍 Resend magic link redirect URL:", fullRedirectUrl);
+      console.log(
+        "🔍 [DEBUG] Resend magic link redirect URL:",
+        fullRedirectUrl
+      );
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
