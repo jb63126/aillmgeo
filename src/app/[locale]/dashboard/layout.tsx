@@ -16,15 +16,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("🔍 [DASHBOARD LAYOUT] Checking authentication");
       const {
         data: { session },
+        error,
       } = await supabase.auth.getSession();
 
+      console.log("🔍 [DASHBOARD LAYOUT] Session check result:", {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        email: session?.user?.email,
+        error: error?.message,
+      });
+
       if (!session) {
+        console.log(
+          "🔍 [DASHBOARD LAYOUT] No session found, redirecting to login"
+        );
         router.push("/en/login");
         return;
       }
 
+      console.log("🔍 [DASHBOARD LAYOUT] Session found, setting authenticated");
       setAuthenticated(true);
       setLoading(false);
     };
@@ -35,9 +48,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔍 [DASHBOARD LAYOUT] Auth state change:", event, {
+        hasSession: !!session,
+        userId: session?.user?.id,
+      });
+
       if (event === "SIGNED_OUT" || !session) {
+        console.log(
+          "🔍 [DASHBOARD LAYOUT] Auth state change - redirecting to login"
+        );
         router.push("/en/login");
       } else if (session) {
+        console.log(
+          "🔍 [DASHBOARD LAYOUT] Auth state change - setting authenticated"
+        );
         setAuthenticated(true);
         setLoading(false);
       }

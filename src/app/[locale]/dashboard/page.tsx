@@ -73,16 +73,40 @@ export default function Dashboard() {
   useEffect(() => {
     // Load search data from URL params and session storage
     const searchId = searchParams.get("search");
+    const domain = searchParams.get("domain");
+
+    console.log("🔍 [DASHBOARD PAGE] Search parameters:", {
+      searchId,
+      domain,
+      allParams: Object.fromEntries(searchParams.entries()),
+    });
+
     if (searchId && typeof window !== "undefined") {
       const savedData = sessionStorage.getItem(`flowql_search_${searchId}`);
+      console.log(
+        "🔍 [DASHBOARD PAGE] Session storage data:",
+        savedData ? "Found" : "Not found"
+      );
+
       if (savedData) {
         try {
           const parsedData = JSON.parse(savedData);
+          console.log("🔍 [DASHBOARD PAGE] Parsed search data:", {
+            hasData: !!parsedData.data,
+            domain: parsedData.domain,
+            timestamp: parsedData.timestamp,
+            resultCount: parsedData.data?.length || 0,
+          });
           setSearchData(parsedData);
         } catch (error) {
-          console.error("Error parsing search data:", error);
+          console.error(
+            "🔍 [DASHBOARD PAGE] Error parsing search data:",
+            error
+          );
         }
       }
+    } else {
+      console.log("🔍 [DASHBOARD PAGE] No search ID found or not in browser");
     }
   }, [searchParams]);
 
