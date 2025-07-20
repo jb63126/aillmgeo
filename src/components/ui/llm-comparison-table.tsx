@@ -59,15 +59,34 @@ const LLMComparisonTable = ({
       // Generate unique search ID
       const searchId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      console.log("🔍 [LLM_TABLE] Starting login flow with search results:", {
+        searchId,
+        domain,
+        dataCount: data.length,
+        sampleQuery: data[0]?.query || "No queries",
+      });
+
       // Store search data in session storage
+      const searchData = {
+        data,
+        domain,
+        timestamp: Date.now(),
+      };
+
       sessionStorage.setItem(
         `flowql_search_${searchId}`,
-        JSON.stringify({
-          data,
-          domain,
-          timestamp: Date.now(),
-        })
+        JSON.stringify(searchData)
       );
+
+      // Verify storage immediately
+      const storedSearchData = sessionStorage.getItem(
+        `flowql_search_${searchId}`
+      );
+      console.log("🔍 [LLM_TABLE] Search data stored:", {
+        key: `flowql_search_${searchId}`,
+        stored: !!storedSearchData,
+        dataLength: storedSearchData?.length || 0,
+      });
 
       // Navigate to dashboard with search parameters
       const params = new URLSearchParams({
@@ -75,8 +94,17 @@ const LLMComparisonTable = ({
         ...(domain && { domain }),
       });
 
+      const dashboardUrl = `/en/dashboard?${params.toString()}`;
+      const loginUrl = `/en/login?redirect=${encodeURIComponent(dashboardUrl)}`;
+
+      console.log("🔍 [LLM_TABLE] Redirect URLs:", {
+        dashboardUrl,
+        loginUrl,
+        encodedRedirect: encodeURIComponent(dashboardUrl),
+      });
+
       // Redirect to login page first
-      window.location.href = `/en/login?redirect=${encodeURIComponent(`/en/dashboard?${params.toString()}`)}`;
+      window.location.href = loginUrl;
     }
   };
 

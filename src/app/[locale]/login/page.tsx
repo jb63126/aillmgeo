@@ -25,8 +25,20 @@ export default function Login() {
   useEffect(() => {
     // Get redirect URL from query params, default to dashboard if none provided
     const redirect = searchParams.get("redirect");
+    console.log("🔍 [LOGIN] URL parameters on load:", {
+      redirect,
+      allParams: Object.fromEntries(searchParams.entries()),
+      currentUrl: typeof window !== "undefined" ? window.location.href : "SSR",
+    });
+
     if (redirect) {
+      console.log("🔍 [LOGIN] Setting redirect URL from params:", redirect);
       setRedirectUrl(redirect);
+    } else {
+      console.log(
+        "🔍 [LOGIN] No redirect param found, using default:",
+        "/en/dashboard"
+      );
     }
     // If no redirect param, stays as default "/en/dashboard"
   }, [searchParams]);
@@ -38,21 +50,38 @@ export default function Login() {
 
     try {
       // Store redirect information for hash-based auth flow
+      const redirectData = {
+        redirect: redirectUrl,
+        timestamp: Date.now(),
+      };
+
+      console.log("🔍 [LOGIN] Before storing redirect:", {
+        redirectUrl,
+        redirectData,
+        currentStorage: Object.keys(sessionStorage),
+      });
+
       sessionStorage.setItem(
         "flowql_auth_redirect",
-        JSON.stringify({
-          redirect: redirectUrl,
-          timestamp: Date.now(),
-        })
+        JSON.stringify(redirectData)
       );
+
+      // Verify storage immediately
+      const storedData = sessionStorage.getItem("flowql_auth_redirect");
+      console.log("🔍 [LOGIN] After storing redirect:", {
+        stored: !!storedData,
+        value: storedData,
+        parsed: storedData ? JSON.parse(storedData) : null,
+        allKeys: Object.keys(sessionStorage),
+      });
 
       // Use production domain for magic link - Supabase will redirect to Site URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
-      console.log("🔍 [DEBUG] Magic link configuration:", {
+      console.log("🔍 [LOGIN] Magic link configuration:", {
         baseUrl,
         redirectUrl,
-        storedRedirect: sessionStorage.getItem("flowql_auth_redirect"),
+        willUseHashAuth: true,
       });
 
       const { error } = await supabase.auth.signInWithOtp({

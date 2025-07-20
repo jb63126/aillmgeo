@@ -64,8 +64,24 @@ export default function Hero() {
             // Clear the hash from URL
             window.history.replaceState(null, "", window.location.pathname);
 
+            // DEBUG: List all sessionStorage keys
+            const allStorageKeys = Object.keys(sessionStorage);
+            console.log("🔍 [HERO] All sessionStorage keys:", allStorageKeys);
+            console.log(
+              "🔍 [HERO] SessionStorage contents:",
+              Object.fromEntries(
+                allStorageKeys.map((key) => [key, sessionStorage.getItem(key)])
+              )
+            );
+
             // Check if there was a redirect parameter in session storage
             const redirectInfo = sessionStorage.getItem("flowql_auth_redirect");
+            console.log("🔍 [HERO] Looking for flowql_auth_redirect:", {
+              exists: !!redirectInfo,
+              value: redirectInfo,
+              rawValue: redirectInfo ? JSON.stringify(redirectInfo) : null,
+            });
+
             let redirectPath = "/en/dashboard";
 
             if (redirectInfo) {
