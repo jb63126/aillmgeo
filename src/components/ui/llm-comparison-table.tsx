@@ -73,16 +73,16 @@ const LLMComparisonTable = ({
         timestamp: Date.now(),
       };
 
-      sessionStorage.setItem(
+      localStorage.setItem(
         `flowql_search_${searchId}`,
         JSON.stringify(searchData)
       );
 
       // Verify storage immediately
-      const storedSearchData = sessionStorage.getItem(
+      const storedSearchData = localStorage.getItem(
         `flowql_search_${searchId}`
       );
-      console.log("🔍 [LLM_TABLE] Search data stored:", {
+      console.log("🔍 [LLM_TABLE] Search data stored in localStorage:", {
         key: `flowql_search_${searchId}`,
         stored: !!storedSearchData,
         dataLength: storedSearchData?.length || 0,

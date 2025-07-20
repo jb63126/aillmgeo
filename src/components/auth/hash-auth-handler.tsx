@@ -48,30 +48,30 @@ export default function HashAuthHandler() {
             // Clear the hash from URL
             window.history.replaceState(null, "", window.location.pathname);
 
-            // DEBUG: List all sessionStorage keys - THIS IS CRITICAL
-            console.log(
-              "🔍 [HASH_AUTH] ===== SESSIONSTORAGE DEBUG START ====="
+            // DEBUG: List all localStorage keys - THIS IS CRITICAL
+            console.log("🔍 [HASH_AUTH] ===== LOCALSTORAGE DEBUG START =====");
+            const allStorageKeys = Object.keys(localStorage).filter((k) =>
+              k.startsWith("flowql_")
             );
-            const allStorageKeys = Object.keys(sessionStorage);
             console.log(
-              "🔍 [HASH_AUTH] All sessionStorage keys:",
+              "🔍 [HASH_AUTH] All flowql localStorage keys:",
               allStorageKeys
             );
             console.log(
-              "🔍 [HASH_AUTH] SessionStorage contents:",
+              "🔍 [HASH_AUTH] LocalStorage contents:",
               Object.fromEntries(
-                allStorageKeys.map((key) => [key, sessionStorage.getItem(key)])
+                allStorageKeys.map((key) => [key, localStorage.getItem(key)])
               )
             );
 
-            // Check if there was a redirect parameter in session storage
-            const redirectInfo = sessionStorage.getItem("flowql_auth_redirect");
+            // Check if there was a redirect parameter in localStorage
+            const redirectInfo = localStorage.getItem("flowql_auth_redirect");
             console.log("🔍 [HASH_AUTH] Looking for flowql_auth_redirect:", {
               exists: !!redirectInfo,
               value: redirectInfo,
               rawValue: redirectInfo ? JSON.stringify(redirectInfo) : null,
             });
-            console.log("🔍 [HASH_AUTH] ===== SESSIONSTORAGE DEBUG END =====");
+            console.log("🔍 [HASH_AUTH] ===== LOCALSTORAGE DEBUG END =====");
 
             let redirectPath = "/en/dashboard";
 
@@ -79,7 +79,7 @@ export default function HashAuthHandler() {
               try {
                 const parsed = JSON.parse(redirectInfo);
                 redirectPath = parsed.redirect || "/en/dashboard";
-                sessionStorage.removeItem("flowql_auth_redirect");
+                localStorage.removeItem("flowql_auth_redirect");
 
                 console.log(
                   "🔍 [HASH_AUTH] Restored redirect path:",
@@ -97,15 +97,31 @@ export default function HashAuthHandler() {
                     domain,
                   });
 
-                  // Verify search data exists in sessionStorage
+                  // Verify search data exists in localStorage
                   if (searchId) {
-                    const savedData = sessionStorage.getItem(
+                    const savedData = localStorage.getItem(
                       `flowql_search_${searchId}`
                     );
                     console.log(
-                      "🔍 [HASH_AUTH] Search data in sessionStorage:",
+                      "🔍 [HASH_AUTH] Search data in localStorage:",
                       savedData ? "Found" : "Not found"
                     );
+
+                    if (savedData) {
+                      try {
+                        const searchDataParsed = JSON.parse(savedData);
+                        console.log("🔍 [HASH_AUTH] Search data details:", {
+                          domain: searchDataParsed.domain,
+                          timestamp: searchDataParsed.timestamp,
+                          resultCount: searchDataParsed.data?.length || 0,
+                        });
+                      } catch (e) {
+                        console.error(
+                          "🔍 [HASH_AUTH] Error parsing search data:",
+                          e
+                        );
+                      }
+                    }
                   }
                 }
               } catch (e) {

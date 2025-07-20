@@ -27,7 +27,9 @@ export default function Hero() {
     const keys = Object.keys(localStorage);
     const cacheKeys = keys.filter((key) => key.startsWith("flowql_analysis_"));
     cacheKeys.forEach((key) => localStorage.removeItem(key));
-    console.log(`🔍 [HERO] Cleared ${cacheKeys.length} cached analyses`);
+    console.log(
+      `🔍 [HERO] Cleared ${cacheKeys.length} cached analyses from localStorage`
+    );
   };
 
   // Hash authentication is now handled by HashAuthHandler component in layout

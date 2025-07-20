@@ -55,24 +55,28 @@ export default function Login() {
         timestamp: Date.now(),
       };
 
-      console.log("🔍 [LOGIN] Before storing redirect:", {
+      console.log("🔍 [LOGIN] Before storing redirect in localStorage:", {
         redirectUrl,
         redirectData,
-        currentStorage: Object.keys(sessionStorage),
+        currentStorage: Object.keys(localStorage).filter((k) =>
+          k.startsWith("flowql_")
+        ),
       });
 
-      sessionStorage.setItem(
+      localStorage.setItem(
         "flowql_auth_redirect",
         JSON.stringify(redirectData)
       );
 
       // Verify storage immediately
-      const storedData = sessionStorage.getItem("flowql_auth_redirect");
-      console.log("🔍 [LOGIN] After storing redirect:", {
+      const storedData = localStorage.getItem("flowql_auth_redirect");
+      console.log("🔍 [LOGIN] After storing redirect in localStorage:", {
         stored: !!storedData,
         value: storedData,
         parsed: storedData ? JSON.parse(storedData) : null,
-        allKeys: Object.keys(sessionStorage),
+        allKeys: Object.keys(localStorage).filter((k) =>
+          k.startsWith("flowql_")
+        ),
       });
 
       // Use production domain for magic link - Supabase will redirect to Site URL
@@ -111,7 +115,7 @@ export default function Login() {
 
     try {
       // Update stored redirect information for hash-based auth flow
-      sessionStorage.setItem(
+      localStorage.setItem(
         "flowql_auth_redirect",
         JSON.stringify({
           redirect: redirectUrl,
@@ -119,9 +123,9 @@ export default function Login() {
         })
       );
 
-      console.log("🔍 [DEBUG] Resend magic link configuration:", {
+      console.log("🔍 [LOGIN] Resend magic link configuration:", {
         redirectUrl,
-        storedRedirect: sessionStorage.getItem("flowql_auth_redirect"),
+        storedRedirect: localStorage.getItem("flowql_auth_redirect"),
       });
 
       const { error } = await supabase.auth.signInWithOtp({
@@ -148,7 +152,7 @@ export default function Login() {
 
     try {
       // Store redirect information for OAuth flow
-      sessionStorage.setItem(
+      localStorage.setItem(
         "flowql_auth_redirect",
         JSON.stringify({
           redirect: redirectUrl,
@@ -183,7 +187,7 @@ export default function Login() {
 
     try {
       // Store redirect information for OAuth flow
-      sessionStorage.setItem(
+      localStorage.setItem(
         "flowql_auth_redirect",
         JSON.stringify({
           redirect: redirectUrl,

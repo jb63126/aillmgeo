@@ -83,19 +83,19 @@ export default function Dashboard() {
     });
 
     if (searchId && typeof window !== "undefined") {
-      const savedData = sessionStorage.getItem(`flowql_search_${searchId}`);
-      console.log("🔍 [DASHBOARD PAGE] Session storage lookup:", {
+      const savedData = localStorage.getItem(`flowql_search_${searchId}`);
+      console.log("🔍 [DASHBOARD PAGE] LocalStorage lookup:", {
         searchId,
         key: `flowql_search_${searchId}`,
         hasData: !!savedData,
         dataLength: savedData?.length || 0,
       });
 
-      // List all sessionStorage keys for debugging
-      const allKeys = Object.keys(sessionStorage);
+      // List all localStorage keys for debugging
+      const allKeys = Object.keys(localStorage);
       const searchKeys = allKeys.filter((key) => key.includes("flowql_search"));
       console.log(
-        "🔍 [DASHBOARD PAGE] All search keys in sessionStorage:",
+        "🔍 [DASHBOARD PAGE] All search keys in localStorage:",
         searchKeys
       );
 
