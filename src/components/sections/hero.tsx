@@ -9,8 +9,6 @@ import { Badge } from "~/components/ui/badge";
 import LLMComparisonTable from "~/components/ui/llm-comparison-table";
 import ProgressBar, { ProgressStep } from "~/components/ui/progress-bar";
 import { websiteAnalysisQueries } from "~/data/llm-comparison-data";
-import { supabase } from "~/lib/supabase";
-import { useRouter } from "next/navigation";
 
 export default function Hero() {
   const [url, setUrl] = useState("");
@@ -23,7 +21,6 @@ export default function Hero() {
   const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
   const [businessAnalysis, setBusinessAnalysis] = useState<any>(null);
   const llmTableRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   // Cache management
   const clearAnalysisCache = () => {
@@ -33,113 +30,7 @@ export default function Hero() {
     console.log(`🔍 [HERO] Cleared ${cacheKeys.length} cached analyses`);
   };
 
-  // Handle hash-based authentication tokens from magic link
-  useEffect(() => {
-    const handleHashAuth = async () => {
-      if (typeof window === "undefined") return;
-
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-      const tokenType = hashParams.get("token_type");
-      const type = hashParams.get("type");
-
-      console.log("🔍 [HERO] Hash auth detection:", {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        tokenType,
-        type,
-        fullHash: window.location.hash,
-      });
-
-      if (accessToken && refreshToken && type === "magiclink") {
-        console.log("🔍 [HERO] Magic link tokens found, establishing session");
-
-        try {
-          // Set the session using the tokens from the hash
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          console.log("🔍 [HERO] Session establishment result:", {
-            hasSession: !!data.session,
-            hasUser: !!data.user,
-            error: error?.message,
-          });
-
-          if (!error && data.session) {
-            // Clear the hash from URL
-            window.history.replaceState(null, "", window.location.pathname);
-
-            // DEBUG: List all sessionStorage keys
-            const allStorageKeys = Object.keys(sessionStorage);
-            console.log("🔍 [HERO] All sessionStorage keys:", allStorageKeys);
-            console.log(
-              "🔍 [HERO] SessionStorage contents:",
-              Object.fromEntries(
-                allStorageKeys.map((key) => [key, sessionStorage.getItem(key)])
-              )
-            );
-
-            // Check if there was a redirect parameter in session storage
-            const redirectInfo = sessionStorage.getItem("flowql_auth_redirect");
-            console.log("🔍 [HERO] Looking for flowql_auth_redirect:", {
-              exists: !!redirectInfo,
-              value: redirectInfo,
-              rawValue: redirectInfo ? JSON.stringify(redirectInfo) : null,
-            });
-
-            let redirectPath = "/en/dashboard";
-
-            if (redirectInfo) {
-              try {
-                const parsed = JSON.parse(redirectInfo);
-                redirectPath = parsed.redirect || "/en/dashboard";
-                sessionStorage.removeItem("flowql_auth_redirect");
-
-                console.log("🔍 [HERO] Restored redirect path:", redirectPath);
-
-                // Check if the redirect path contains search parameters
-                if (redirectPath.includes("?search=")) {
-                  const url = new URL(redirectPath, window.location.origin);
-                  const searchId = url.searchParams.get("search");
-                  const domain = url.searchParams.get("domain");
-
-                  console.log("🔍 [HERO] Search parameters found:", {
-                    searchId,
-                    domain,
-                  });
-
-                  // Verify search data exists in sessionStorage
-                  if (searchId) {
-                    const savedData = sessionStorage.getItem(
-                      `flowql_search_${searchId}`
-                    );
-                    console.log(
-                      "🔍 [HERO] Search data in sessionStorage:",
-                      savedData ? "Found" : "Not found"
-                    );
-                  }
-                }
-              } catch (e) {
-                console.log("🔍 [HERO] Could not parse redirect info");
-              }
-            }
-
-            console.log("🔍 [HERO] Final redirect path:", redirectPath);
-            router.push(redirectPath);
-          } else {
-            console.error("🔍 [HERO] Failed to establish session:", error);
-          }
-        } catch (err) {
-          console.error("🔍 [HERO] Error setting session:", err);
-        }
-      }
-    };
-
-    handleHashAuth();
-  }, [router]);
+  // Hash authentication is now handled by HashAuthHandler component in layout
 
   // Scroll to LLM table when analysis is complete
   useEffect(() => {

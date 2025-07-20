@@ -7,6 +7,7 @@ import { Toaster } from "~/components/ui/toaster";
 import { siteConfig, siteUrl } from "~/config/site";
 import { cn } from "~/lib/utils";
 import { I18nProviderClient } from "~/locales/client";
+import HashAuthHandler from "~/components/auth/hash-auth-handler";
 import "../globals.css";
 
 type Props = {
@@ -129,6 +130,7 @@ export default async function RootLayout({
         )}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <HashAuthHandler />
           <Header />
           <main>
             {children}
