@@ -30,6 +30,7 @@ import {
   Search,
   Package,
   Wrench,
+  Microscope,
   type LucideIcon,
   type LucideProps,
 } from "lucide-react";
@@ -79,7 +80,7 @@ const Icons = {
   dashboard: LayoutDashboard,
   analytics: BarChart3,
   search: Search,
-  analysisTools: Wrench,
+  analysisLab: Microscope,
   assets: Package,
   gitHub: (props: LucideProps) => (
     <svg viewBox="0 0 438.549 438.549" {...props}>
