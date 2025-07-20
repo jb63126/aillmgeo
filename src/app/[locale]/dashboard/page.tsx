@@ -253,6 +253,7 @@ export default function Dashboard() {
             data={searchData.data}
             domain={searchData.domain}
             title="LLM Performance Results"
+            isAuthenticated={true}
           />
 
           {/* Add Questions Card */}

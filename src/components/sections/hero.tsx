@@ -401,6 +401,7 @@ export default function Hero() {
             <LLMComparisonTable
               data={result.llmResults || []}
               domain={new URL(result.url).hostname}
+              isAuthenticated={false}
             />
           </div>
         )}

@@ -21,6 +21,7 @@ interface LLMComparisonTableProps {
   title?: string;
   className?: string;
   domain?: string;
+  isAuthenticated?: boolean;
 }
 
 const LLMComparisonTable = ({
@@ -28,6 +29,7 @@ const LLMComparisonTable = ({
   title = "LLM Performance Comparison",
   className = "",
   domain,
+  isAuthenticated = false,
 }: LLMComparisonTableProps) => {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
@@ -196,7 +198,7 @@ const LLMComparisonTable = ({
         </div>
 
         {/* Desktop Freemium Paywall Overlay */}
-        {data.length > 1 && (
+        {data.length > 1 && !isAuthenticated && (
           <div className="absolute inset-0 top-[90px] z-20 hidden items-center justify-center md:flex">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
             <div className="relative z-30 rounded-lg border border-border bg-card p-6 shadow-lg">
@@ -240,7 +242,7 @@ const LLMComparisonTable = ({
           ))}
 
           {/* Mobile Freemium Paywall */}
-          {data.length > 1 && (
+          {data.length > 1 && !isAuthenticated && (
             <div className="absolute inset-0 top-[50px] z-20 flex items-center justify-center md:hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background" />
               <div className="relative z-30 mx-4 rounded-lg border border-border bg-card p-4 shadow-lg">
