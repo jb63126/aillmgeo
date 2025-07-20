@@ -27,6 +27,9 @@ import {
   User,
   X,
   BarChart3,
+  Search,
+  Package,
+  Wrench,
   type LucideIcon,
   type LucideProps,
 } from "lucide-react";
@@ -75,6 +78,9 @@ const Icons = {
   home: Home,
   dashboard: LayoutDashboard,
   analytics: BarChart3,
+  search: Search,
+  analysisTools: Wrench,
+  assets: Package,
   gitHub: (props: LucideProps) => (
     <svg viewBox="0 0 438.549 438.549" {...props}>
       <path

@@ -20,6 +20,16 @@ const navItems = [
     icon: Icons.analytics,
   },
   {
+    title: "Analysis Tools",
+    href: "/en/dashboard/analysis-tools",
+    icon: Icons.analysisTools,
+  },
+  {
+    title: "Assets",
+    href: "/en/dashboard/assets",
+    icon: Icons.assets,
+  },
+  {
     title: "Settings",
     href: "/en/dashboard/settings",
     icon: Icons.settings,
