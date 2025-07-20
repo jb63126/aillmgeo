@@ -25,6 +25,14 @@ export default function Hero() {
   const llmTableRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Cache management
+  const clearAnalysisCache = () => {
+    const keys = Object.keys(localStorage);
+    const cacheKeys = keys.filter((key) => key.startsWith("flowql_analysis_"));
+    cacheKeys.forEach((key) => localStorage.removeItem(key));
+    console.log(`🔍 [HERO] Cleared ${cacheKeys.length} cached analyses`);
+  };
+
   // Handle hash-based authentication tokens from magic link
   useEffect(() => {
     const handleHashAuth = async () => {
@@ -165,6 +173,45 @@ export default function Hero() {
       return;
     }
 
+    const normalizedUrl = normalizeUrl(url);
+
+    // Check for cached results first
+    const cacheKey = `flowql_analysis_${btoa(normalizedUrl).replace(/[/+=]/g, "")}`;
+    const cachedResult = localStorage.getItem(cacheKey);
+
+    if (cachedResult) {
+      try {
+        const parsedCache = JSON.parse(cachedResult);
+        const cacheAge = Date.now() - parsedCache.timestamp;
+        const cacheValid = cacheAge < 24 * 60 * 60 * 1000; // 24 hours
+
+        console.log("🔍 [HERO] Cache check:", {
+          found: true,
+          ageHours: (cacheAge / (60 * 60 * 1000)).toFixed(1),
+          valid: cacheValid,
+          url: normalizedUrl,
+        });
+
+        if (cacheValid) {
+          // Use cached results
+          setResult(parsedCache.data);
+          setBusinessAnalysis(parsedCache.data.businessSummary);
+          setShowLLMSection(true);
+          console.log("🔍 [HERO] Using cached results for:", normalizedUrl);
+          return;
+        } else {
+          // Remove expired cache
+          localStorage.removeItem(cacheKey);
+          console.log("🔍 [HERO] Cache expired, removing and re-analyzing");
+        }
+      } catch (error) {
+        console.error("🔍 [HERO] Error parsing cache:", error);
+        localStorage.removeItem(cacheKey);
+      }
+    } else {
+      console.log("🔍 [HERO] No cache found for:", normalizedUrl);
+    }
+
     setIsAnalyzing(true);
     setError("");
     setShowProgressBar(true);
@@ -185,7 +232,7 @@ export default function Hero() {
     setProgressSteps(steps);
 
     try {
-      const normalizedUrl = normalizeUrl(url);
+      // const normalizedUrl already declared above
 
       // Step 1: Gathering business details
       const response = await fetch("/api/analyze", {
@@ -262,11 +309,27 @@ export default function Hero() {
         );
 
         // Set final result with LLM data
-        setResult({
+        const finalResult = {
           ...data,
           url: normalizedUrl,
           llmResults,
-        });
+        };
+
+        setResult(finalResult);
+
+        // Cache the results for future use
+        try {
+          const cacheKey = `flowql_analysis_${btoa(normalizedUrl).replace(/[/+=]/g, "")}`;
+          const cacheData = {
+            data: finalResult,
+            timestamp: Date.now(),
+            url: normalizedUrl,
+          };
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+          console.log("🔍 [HERO] Results cached for:", normalizedUrl);
+        } catch (error) {
+          console.error("🔍 [HERO] Error caching results:", error);
+        }
 
         // Hide progress bar and show LLM section
         setTimeout(() => {
