@@ -90,19 +90,19 @@ const LLMComparisonTable = ({
         dataLength: storedSearchData?.length || 0,
       });
 
-      // Navigate to dashboard with search parameters
+      // Navigate to Analysis Lab with search parameters
       const params = new URLSearchParams({
         search: searchId,
         ...(domain && { domain }),
       });
 
-      const dashboardUrl = `/en/dashboard?${params.toString()}`;
-      const loginUrl = `/en/login?redirect=${encodeURIComponent(dashboardUrl)}`;
+      const analysisLabUrl = `/en/dashboard/analysis-lab?${params.toString()}`;
+      const loginUrl = `/en/login?redirect=${encodeURIComponent(analysisLabUrl)}`;
 
       console.log("🔍 [LLM_TABLE] Redirect URLs:", {
-        dashboardUrl,
+        analysisLabUrl,
         loginUrl,
-        encodedRedirect: encodeURIComponent(dashboardUrl),
+        encodedRedirect: encodeURIComponent(analysisLabUrl),
       });
 
       // Redirect to login page first

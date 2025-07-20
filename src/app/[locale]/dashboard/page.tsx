@@ -6,8 +6,20 @@ import { supabase } from "~/lib/supabase";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import LLMComparisonTable from "~/components/ui/llm-comparison-table";
-import { Plus, Globe, Check, X, Home } from "lucide-react";
+import {
+  TrendingUp,
+  Target,
+  AlertTriangle,
+  BarChart3,
+  Activity,
+  ArrowRight,
+  Microscope,
+  Package,
+  BarChart,
+  Globe,
+  Calendar,
+  Eye,
+} from "lucide-react";
 
 interface User {
   id: string;
@@ -18,32 +30,20 @@ interface User {
   };
 }
 
-interface LLMResult {
-  llm: string;
-  result: boolean;
-  status?: string;
-}
-
-interface QueryResult {
-  query: string;
-  results: LLMResult[];
-}
-
-interface SearchData {
-  data: QueryResult[];
-  domain?: string;
+interface RecentActivity {
+  id: string;
+  type: "analysis" | "question" | "export";
+  domain: string;
   timestamp: number;
+  status: "completed" | "in_progress" | "failed";
 }
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchData, setSearchData] = useState<SearchData | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // This component is now rendered within the dashboard layout, so no auth check needed here
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -71,147 +71,49 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Load search data from URL params and session storage
-    const searchId = searchParams.get("search");
-    const domain = searchParams.get("domain");
-
-    console.log("🔍 [DASHBOARD PAGE] Search parameters:", {
-      searchId,
-      domain,
-      allParams: Object.fromEntries(searchParams.entries()),
-      currentUrl: typeof window !== "undefined" ? window.location.href : "SSR",
-    });
-
-    if (searchId && typeof window !== "undefined") {
-      const savedData = localStorage.getItem(`flowql_search_${searchId}`);
-      console.log("🔍 [DASHBOARD PAGE] LocalStorage lookup:", {
-        searchId,
-        key: `flowql_search_${searchId}`,
-        hasData: !!savedData,
-        dataLength: savedData?.length || 0,
-      });
-
-      // List all localStorage keys for debugging
-      const allKeys = Object.keys(localStorage);
-      const searchKeys = allKeys.filter((key) => key.includes("flowql_search"));
-      console.log(
-        "🔍 [DASHBOARD PAGE] All search keys in localStorage:",
-        searchKeys
+    // Load recent activity from localStorage
+    if (typeof window !== "undefined") {
+      const keys = Object.keys(localStorage);
+      const analysisKeys = keys.filter(
+        (key) =>
+          key.startsWith("flowql_analysis_") || key.startsWith("flowql_search_")
       );
 
-      if (savedData) {
+      const activities: RecentActivity[] = [];
+
+      analysisKeys.slice(0, 5).forEach((key) => {
         try {
-          const parsedData = JSON.parse(savedData);
-          console.log("🔍 [DASHBOARD PAGE] Parsed search data:", {
-            hasData: !!parsedData.data,
-            domain: parsedData.domain,
-            timestamp: parsedData.timestamp,
-            resultCount: parsedData.data?.length || 0,
-            sampleQuery: parsedData.data?.[0]?.query || "No queries",
-          });
-          setSearchData(parsedData);
+          const data = JSON.parse(localStorage.getItem(key) || "");
+          if (data.url || data.domain) {
+            activities.push({
+              id: key,
+              type: "analysis",
+              domain:
+                data.domain ||
+                (data.url ? new URL(data.url).hostname : "Unknown"),
+              timestamp: data.timestamp || Date.now(),
+              status: "completed",
+            });
+          }
         } catch (error) {
-          console.error(
-            "🔍 [DASHBOARD PAGE] Error parsing search data:",
-            error
-          );
+          console.error("Error parsing activity data:", error);
         }
-      } else {
-        console.log(
-          "🔍 [DASHBOARD PAGE] No data found for search ID:",
-          searchId
-        );
-      }
-    } else {
-      console.log("🔍 [DASHBOARD PAGE] No search ID found or not in browser");
+      });
+
+      // Sort by timestamp, newest first
+      activities.sort((a, b) => b.timestamp - a.timestamp);
+      setRecentActivity(activities);
     }
-  }, [searchParams]);
+  }, []);
 
-  const handleUpgrade = () => {
-    setShowUpgradeModal(true);
-  };
-
-  const UpgradeModal = () => {
-    if (!showUpgradeModal) return null;
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-          <div className="space-y-4">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Upgrade to Pro
-              </h2>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Add custom questions and get deeper insights
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                      Pro Plan
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Unlimited custom questions
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                      $29
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      /month
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  Add unlimited custom questions
-                </li>
-                <li className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  Advanced analytics and insights
-                </li>
-                <li className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  Priority support
-                </li>
-                <li className="flex items-center">
-                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                  Export detailed reports
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  // In a real app, this would integrate with payment system
-                  alert("Upgrade functionality coming soon!");
-                  setShowUpgradeModal(false);
-                }}
-                className="flex-1"
-              >
-                Upgrade Now
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Mock data for KPIs
+  const mockKPIs = {
+    overallScore: 73,
+    scoreChange: 5.2,
+    totalAnalyses: recentActivity.length,
+    competitiveGaps: 3,
+    bestPerformingLLM: "ChatGPT",
+    bestLLMScore: 89,
   };
 
   if (loading) {
@@ -232,130 +134,252 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {searchData ? (
-        // Display LLM Analysis Results
-        <div className="space-y-6">
-          {/* Domain Header */}
-          {searchData.domain && (
-            <div className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">
-                Analysis for {searchData.domain}
-              </h2>
-              <Badge variant="secondary">
-                {new Date(searchData.timestamp).toLocaleDateString()}
-              </Badge>
+      {/* KPI Widgets - Top Row */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Overall Mention Score */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Overall Mention Score
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockKPIs.overallScore}%</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">+{mockKPIs.scoreChange}%</span>{" "}
+              from last period
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Analyses */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Analyses
+            </CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockKPIs.totalAnalyses}</div>
+            <p className="text-xs text-muted-foreground">Websites analyzed</p>
+          </CardContent>
+        </Card>
+
+        {/* Best Performing LLM */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Best Performing LLM
+            </CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">
+              {mockKPIs.bestPerformingLLM}
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">
+              {mockKPIs.bestLLMScore}% success rate
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* LLM Comparison Table */}
-          <LLMComparisonTable
-            data={searchData.data}
-            domain={searchData.domain}
-            title="LLM Performance Results"
-            isAuthenticated={true}
-          />
+        {/* Competitive Gaps */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Improvement Areas
+            </CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {mockKPIs.competitiveGaps}
+            </div>
+            <p className="text-xs text-muted-foreground">Areas to optimize</p>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Add Questions Card */}
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Performance Trend (spans 2 columns) */}
+        <div className="lg:col-span-2">
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Plus className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mt-4 text-lg font-semibold">
-                  Add More Questions
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Get deeper insights with custom questions tailored to your
-                  business
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={handleUpgrade}
-                >
-                  Upgrade to Add Questions
-                </Button>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart className="h-5 w-5" />
+                Performance Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <TrendingUp className="mx-auto h-12 w-12 opacity-50" />
+                  <p className="mt-4 text-sm">Performance chart coming soon</p>
+                  <p className="text-xs">
+                    Track your AI search visibility over time
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
-      ) : (
-        // Default Dashboard Content
-        <div className="space-y-6">
-          {/* Quick Start Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome to FlowQL</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-muted-foreground">
-                Start analyzing your website&apos;s performance across different
-                AI search engines.
-              </p>
-              <Button onClick={() => router.push("/")}>
-                <Home className="mr-2 h-4 w-4" />
-                Analyze New Website
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full" onClick={() => router.push("/")}>
+              <Activity className="mr-2 h-4 w-4" />
+              Run New Analysis
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/en/dashboard/analysis-lab")}
+            >
+              <Microscope className="mr-2 h-4 w-4" />
+              Analysis Lab
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/en/dashboard/analytics")}
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              View Analytics
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push("/en/dashboard/assets")}
+            >
+              <Package className="mr-2 h-4 w-4" />
+              Manage Assets
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom Row */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Recent Activity
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/en/dashboard/assets")}
+              >
+                View All
               </Button>
-            </CardContent>
-          </Card>
-
-          {/* Dashboard Cards Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full" onClick={() => router.push("/")}>
-                  Analyze New Website
-                </Button>
-                <Button variant="outline" className="w-full" disabled>
-                  View Analysis History
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    (Coming Soon)
-                  </span>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No recent analyses. Start by analyzing a website to see
-                  results here.
+            </div>
+          </CardHeader>
+          <CardContent>
+            {recentActivity.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Activity className="mx-auto h-8 w-8 opacity-50" />
+                <p className="mt-2 text-sm">No recent activity</p>
+                <p className="text-xs">
+                  Run your first analysis to see activity here
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Account</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-sm">
-                  <span className="font-medium">Email:</span>
-                  <br />
-                  <span className="text-muted-foreground">{user?.email}</span>
-                </div>
-                {user?.user_metadata?.full_name && (
-                  <div className="text-sm">
-                    <span className="font-medium">Name:</span>
-                    <br />
-                    <span className="text-muted-foreground">
-                      {user.user_metadata.full_name}
-                    </span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.slice(0, 4).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
+                        <Globe className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{activity.domain}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(activity.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary">{activity.status}</Badge>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <UpgradeModal />
+        {/* Competitive Insights */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Competitive Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">ChatGPT Performance</p>
+                  <p className="text-xs text-muted-foreground">
+                    vs. industry average
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-green-600">+15%</p>
+                  <p className="text-xs text-muted-foreground">Above avg</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Claude Performance</p>
+                  <p className="text-xs text-muted-foreground">
+                    vs. industry average
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-orange-600">-8%</p>
+                  <p className="text-xs text-muted-foreground">Below avg</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Content Gaps</p>
+                  <p className="text-xs text-muted-foreground">
+                    Opportunities found
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">
+                    {mockKPIs.competitiveGaps}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Areas</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => router.push("/en/dashboard/analytics")}
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                View Detailed Analysis
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
